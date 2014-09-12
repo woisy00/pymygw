@@ -4,8 +4,12 @@ import logging.handlers
 
 import config
 import Gateway
+import Database
 
 
+'''
+    Logging
+'''
 log = logging.getLogger('pymygw')
 if not log.handlers:
     formatter = logging.Formatter("%(asctime)s - [%(levelname)s] %(message)s")
@@ -16,6 +20,10 @@ if config.DEBUG:
     log.setLevel(logging.DEBUG)
 else:
     log.setLevel(logging.NOTICE)
+
+
+log.debug('Try to open DB connection')
+db = Database.Database()
 
 
 def checkGateway():

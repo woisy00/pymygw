@@ -3,7 +3,7 @@ from time import sleep
 
 import config
 import MySensor
-from pymygw import log
+from pymygw import log, db
 
 
 class Gateway(object):
@@ -12,6 +12,10 @@ class Gateway(object):
         self._maxChilds = config.MaxChilds
         self._template = config.MySensorStructureTemplate
         self._log = log
+
+        self._db = db
+        self._dbcursor = self._db.cursor()
+        self._dbresult = None
 
         '''
             Init MySensor Objects
@@ -51,6 +55,7 @@ class Gateway(object):
 
     def __parseIncomming(self):
         '''
+            Main Worker
             parse incoming serial lines
         '''
         self._splitresponse = self.response.split(config.Seperator, 6)
@@ -81,6 +86,34 @@ class Gateway(object):
                              MessageType: {messagetype},\n\
                              SubType: {subtype},\n\
                              Payload: {payload}'.format(**self._incoming))
+
+            '''
+                check if DB entry exists
+                if not create a new one
+            '''
+            self.__resetDBResult()
+            self._dbid = '_'.join([self._incoming['nodeid'], self._incoming['childid']])
+            '''
+                skip gateway
+                address: 0;0
+            '''
+            if self._incoming['nodeid'] == '0':
+                return None
+            self._dbresult = self._dbcursor.execute('''SELECT * FROM sensors WHERE id=?''', (self._dbid,)).fetchall()
+            self._log.debug('DB Select Result for {0}: {1}'.format(self._dbid,
+                                                                   self._dbresult))
+            if not self._dbresult:
+                self._dbcursor.execute('''INSERT INTO sensors(id, type)\
+                                        VALUES (?, ?)''', (self._dbid,
+                                                           self._incoming['subtype'])).fetchall()
+                self.__commitDB()
+                self._log.debug('DB Insert done: {0}'.format(self._dbid))
+
+    def __resetDBResult(self):
+        self._dbresult = None
+
+    def __commitDB(self):
+        self._db.commit()
 
     def __isDebug(self):
         '''

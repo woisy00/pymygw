@@ -6,6 +6,13 @@ LogFile = 'pymygw.log'
 
 
 '''
+Database
+'''
+Database = '.pymygw.db'
+DatabaseTable = 'sensors'
+DatabaseTableCreate = 'CREATE TABLE IF NOT EXISTS {0} (id TEXT UNIQUE, type TEXT, openhab TEXT)'.format(DatabaseTable)
+
+'''
 Arduino Serial config
 '''
 SerialPort = '/dev/ttyACM0'
