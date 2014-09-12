@@ -12,7 +12,7 @@ class Gateway(object):
         self._maxChilds = config.MaxChilds
         self._template = config.MySensorStructureTemplate
         self._log = log
-        
+
         '''
             Init MySensor Objects
         '''
@@ -43,7 +43,8 @@ class Gateway(object):
         if self._serialIsConnected:
             self.response = self._serialConnection.readline()
             if self.response:
-                self._log.info('got message: {0}'.format(self.response))
+                self.response = self.response.rstrip(config.EOL)
+                self._log.info('incoming message: {0}'.format(self.response))
                 self.__parseIncomming()
                 return self.response
         return None
@@ -52,36 +53,57 @@ class Gateway(object):
         '''
             parse incoming serial lines
         '''
-        try:
-            n,c,m,s,p = self.response.split(config.Seperator)
-        except:
-            self._log.error('parse error: {0}'.format(self.response))
-            return None
-        if p.startswith('read='):
-            self._log.debug('get debug message: {0}'.format(self.response))
-            return None
-            
-        self._incoming = self._template
-        self._incoming['nodeid'] = n
-        self._incoming['childid'] = c
-        self._incoming['messagetype'] = self._messagetype(m)
-        if int(m) == self._internal.id('PRESENTATION'):
-            self._incoming['subtype'] = self._presentation(s)
-        elif int(m) == self._internal.id('SET') or int(m) == self._internal.id('REQ'):
-            self._incoming['subtype'] = self._setreq(s)
-        else:
-             self._incoming['subtype'] = s
-        self._incoming['payload'] = p
-        self._log.debug('NodeID: {nodeid}, ChildID: {childid}, MessageType: {messagetype}, SubType: {subtype}, Payload: {payload}'.format(**self._incoming))
-        
-        
+        self._splitresponse = self.response.split(config.Seperator, 6)
+
+        if self.__isLongEnough:
+            if self.__isDebug():
+                self._log.debug('got debug message: {0}'.format(self.response))
+                return None
+
+            self._incoming = self._template
+            n, c, m, a, s, p = self._splitresponse
+            self._incoming['nodeid'] = n
+            self._incoming['childid'] = c
+            self._incoming['messagetype'] = self._messagetype.name(m)
+            self._incoming['ack'] = a
+            if self.__toInt(m) == self._messagetype.id('PRESENTATION'):
+                self._incoming['subtype'] = self._presentation.name(s)
+            elif self.__toInt(m) == self._messagetype.id('SET') or \
+                    self.__toInt(m) == self._messagetype.id('REQ'):
+                self._incoming['subtype'] = self._setreq.name(s)
+            elif self.__toInt(m) == self._messagetype.id('INTERNAL'):
+                self._incoming['subtype'] = self._internal.name(s)
+            else:
+                self._incoming['subtype'] = s
+            self._incoming['payload'] = p
+            self._log.debug('NodeID: {nodeid},\n\
+                             ChildID: {childid},\n\
+                             MessageType: {messagetype},\n\
+                             SubType: {subtype},\n\
+                             Payload: {payload}'.format(**self._incoming))
+
+    def __isDebug(self):
+        '''
+            Internal ID 3
+            SubType ID 9
+        '''
+        if self._splitresponse[2] == '3' and self._splitresponse[4] == '9':
+            return True
+        return False
+
+    def __toInt(self, i):
+        return int(float(i))
+
+    def __isLongEnough(self):
+        return True if len(self._splitresponse) == 6 else False
+
     def __knownNodeChild(self):
         '''
             TODO
             Check sqlite if Node;Sensor is known and glued to openhab stuff
         '''
         pass
-        
+
     def __prepareCommand(self):
         '''
             prepare the Serial Command
@@ -91,8 +113,7 @@ class Gateway(object):
                 self._cmd[k] = self._template[k]
 
         self._serialcmd = '{nodeid}{sep}{childid}{sep}{messagetype}{sep}{ack}{sep}{subtype}{sep}{payload}'.format(**self._cmd)
-        
-        
+
     def __connectSerial(self):
         try:
             self._serialConnection = serial.Serial(self._serialPort,

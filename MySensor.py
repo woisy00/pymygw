@@ -3,22 +3,32 @@ import config
 
 class MySensor(object):
     def __init__(self):
+        '''
+            RevertDict id -> Name
+        '''
         self.RevertDict = {}
         for k, v in self._dict.iteritems():
             self.RevertDict[v['id']] = k
 
-    def __prepare(self, i):
-        self._request = i
-        if isinstance(i, int) and i in self.RevertDict:
-            self.__request = self.RevertDict[i]
-        elif isinstance(i, str):
+    def __prepare(self, i, t='str'):
+        if t == 'str' and isinstance(i, str):
             #force upper case
-            self.__request = i.upper()
+            self._request = i.upper()
+        elif t == 'int':
+            self._request = self.__toInt(i)
 
     def __searchRequest(self):
         self._answer = None
         if self._request in self._dict:
             self._answer = self._dict[self._request][self._lf]
+
+    def __toInt(self, i):
+        return int(float(i))
+
+    def name(self, i):
+        self.__prepare(i, t='int')
+        if self._request in self.RevertDict:
+            return self.RevertDict[self._request]
 
     def id(self, i):
         self.__prepare(i)

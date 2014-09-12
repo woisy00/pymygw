@@ -19,9 +19,11 @@ else:
 
 
 def checkGateway():
-    line = gateway.loop()
-    if line is not None:
-        log.info('line recieved {0}'.format(line))
+    '''
+        Loop forever
+        TODO: start/stop strg-c support
+    '''
+    gateway.loop()
 
 
 def main():
