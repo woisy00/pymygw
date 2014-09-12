@@ -8,7 +8,7 @@ import Gateway
 
 log = logging.getLogger('pymygw')
 if not log.handlers:
-    formatter = logging.Formatter("%(asctime)s - %(name)s : %(message)s")
+    formatter = logging.Formatter("%(asctime)s - [%(levelname)s] %(message)s")
     handler = logging.handlers.RotatingFileHandler(config.LogFile, maxBytes=4000000, backupCount=5)
     handler.setFormatter(formatter)
     log.addHandler(handler)

@@ -23,8 +23,8 @@ EOL = '\n'
 
 
 '''
-
 MySensor Serial Protocol Definition v1.4 (Beta)
+TODO: add link to serial protocol
 
 '''
 MySensorStructureTemplate = {'nodeid': None,

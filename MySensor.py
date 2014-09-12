@@ -34,24 +34,36 @@ class MySensor(object):
 
 
 class MySensorMessageType(MySensor):
+    '''
+        MySensor MessageType Mapping Object
+    '''
     def __init__(self):
         self._dict = config.MySensorMessageType
         MySensor.__init__(self)
 
 
 class MySensorPresentation(MySensor):
+    '''
+        MySensor Presentation Mapping Object
+    '''
     def __init__(self):
         self._dict = config.MySensorPresentation
         MySensor.__init__(self)
 
 
 class MySensorSetReq(MySensor):
+    '''
+        MySensor Set and Request Mapping Object
+    '''
     def __init__(self):
         self._dict = config.MySensorSetReq
         MySensor.__init__(self)
 
 
 class MySensorInternal(MySensor):
+    '''
+        MySensor Internal Mapping Object
+    '''
     def __init__(self):
         self._dict = config.MySensorInternal
         MySensor.__init__(self)
