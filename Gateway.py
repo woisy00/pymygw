@@ -55,6 +55,10 @@ class Gateway(object):
                 return self.response
         return None
 
+    def stop(self):
+        self._db.disconnect()
+        self.__disconnectSerial()
+
     def __parseIncoming(self):
         '''
             Main Worker
@@ -62,7 +66,7 @@ class Gateway(object):
         '''
         self._splitresponse = self.response.split(config.Seperator, 6)
 
-        if self.__isLongEnough:
+        if self.__isLongEnough():
             if self.__isDebug():
                 self._log.debug('got debug message: {0}'.format(self.response))
                 return None
@@ -101,9 +105,6 @@ class Gateway(object):
                                             typ=self._incoming['subtype'])
             self._log.debug('DB Results in parseIncoming: {0}'.format(self._dbresult))
 
-    def __commitDB(self):
-        self._db.commit()
-
     def __isDebug(self):
         '''
             Internal ID 3
@@ -117,6 +118,7 @@ class Gateway(object):
         return int(float(i))
 
     def __isLongEnough(self):
+        self._log.debug('Message Length: {0}, Message: {1}'.format(len(self._splitresponse), self._splitresponse))
         return True if len(self._splitresponse) == 6 else False
 
     def __knownNodeChild(self):

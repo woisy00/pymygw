@@ -1,4 +1,6 @@
-import tornado.ioloop
+from threading import Thread
+import sys
+import signal
 import logging
 import logging.handlers
 
@@ -24,24 +26,40 @@ else:
 log.debug('Try to open DB connection')
 db = Database.Database()
 
+THREADS = []
 
-def checkGateway():
-    '''
-        Loop forever
-        TODO: start/stop strg-c support
-    '''
-    gateway.loop()
+
+class GatewayThread(Thread):
+    def __init__(self):
+        self.alive = True
+        self.gateway = Gateway.Gateway()
+        Thread.__init__(self)
+
+    def run(self):
+        while self.alive:
+            self.gateway.loop()
+        self.gateway.stop()
+
+
+def stop(signal, frame):
+    log.info('CTRL-C recieved, stopping')
+    for t in THREADS:
+        t.alive = False
+    sys.exit(0)
 
 
 def main():
+    global THREADS
     log.info('starting up')
-    serial_loop = tornado.ioloop.PeriodicCallback(checkGateway, 10)
-    serial_loop.start()
+    thread = GatewayThread()
+    #thread.daemon = True
+    thread.start()
     log.info('loop started')
-    tornado.ioloop.IOLoop.instance().start()
+    THREADS.append(thread)
 
 
 if __name__ == "__main__":
-    gateway = Gateway.Gateway()
+    signal.signal(signal.SIGINT, stop)
     main()
-
+    while True:
+        signal.pause()

@@ -10,25 +10,29 @@ class Database(object):
         self._db = None
         self._cursor = None
         self._isConnected = False
-        self.__connect()
+        self.__initDB()
         self._nodes = {}
+
+    def disconnect(self):
+        if self._isConnected:
+            self._db.commit()
+            self._db.close()
 
     def __connect(self):
         try:
             self._db = sqlite3.connect(config.Database)
-            self._cursor = self._db.cursor()
-            self._cursor.execute(config.DatabaseTableCreate)
-            self._db.commit()
-            self._isConnected = True
+            return self._db.cursor()
         except Exception, e:
-            print e
             self._log.error('DB connect failed: {0}'.format(e))
-            self._isConnected = False
 
-    def __disconnect(self):
-        if self._isConnected:
-            self._db.commit()
-            self._db.close()
+    def __initDB(self):
+        c = self.__connect()
+        c.execute(config.DatabaseTableCreate)
+        self.__closeCursor(c)
+        self._db.commit()
+
+    def __closeCursor(self, c):
+        c.close()
 
     def __commit(self):
         self._db.commit()
@@ -38,6 +42,7 @@ class Database(object):
                                    'openhab': self._nodeopenhab}
 
     def check(self, node=None, sensor=None, typ=None):
+        c = self.__connect()
         if node is None or sensor is None or typ is None:
             return None
 
@@ -46,7 +51,7 @@ class Database(object):
         self._nodeopenhab = None
         if not self._node in self._nodes:
             try:
-                self._dbresult = self._cursor.execute('''SELECT typ, obenhab FROM sensors WHERE id=?''', (self._node,)).fetchall()
+                self._dbresult = c.execute('''SELECT typ, obenhab FROM sensors WHERE id=?''', (self._node,)).fetchall()
                 self._log.debug('DB Select Result for {0}: {1}'.format(self._node,
                                                                        self._dbresult))
             except:
@@ -61,7 +66,7 @@ class Database(object):
                         self._nodeopenhab = e[1]
                     self.__addtoNodes()
             else:
-                self._cursor.execute('''INSERT INTO sensors(id, typ, openhab) VALUES (?, ?, ? )''', (self._node,
+                c.execute('''INSERT INTO sensors(id, typ, openhab) VALUES (?, ?, ? )''', (self._node,
                                                                                                      self._nodetyp,
                                                                                                      self._nodeopenhab))
                 self.__commit()
@@ -78,5 +83,5 @@ class Database(object):
                                                                                                    self._nodetyp,
                                                                                                    typ))
                 return None
-
+        self.__closeCursor(c)
         return self._nodes[self._node]
