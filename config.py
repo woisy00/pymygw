@@ -10,7 +10,7 @@ Database
 '''
 Database = '.pymygw.db'
 DatabaseTable = 'sensors'
-DatabaseTableCreate = 'CREATE TABLE IF NOT EXISTS {0} (id TEXT UNIQUE, type TEXT, openhab TEXT)'.format(DatabaseTable)
+DatabaseTableCreate = 'CREATE TABLE IF NOT EXISTS {0} (id TEXT UNIQUE, typ TEXT, openhab TEXT)'.format(DatabaseTable)
 
 '''
 Arduino Serial config

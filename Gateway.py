@@ -3,7 +3,9 @@ from time import sleep
 
 import config
 import MySensor
-from pymygw import log, db
+from pymygw import db
+
+import logging
 
 
 class Gateway(object):
@@ -11,10 +13,10 @@ class Gateway(object):
         self._maxNodes = config.MaxNodes
         self._maxChilds = config.MaxChilds
         self._template = config.MySensorStructureTemplate
-        self._log = log
+        self._log = logging.getLogger('pymygw')
 
         self._db = db
-        self._dbcursor = self._db.cursor()
+        #self._dbcursor = self._db.cursor()
         self._dbresult = None
 
         '''
@@ -49,11 +51,11 @@ class Gateway(object):
             if self.response:
                 self.response = self.response.rstrip(config.EOL)
                 self._log.info('incoming message: {0}'.format(self.response))
-                self.__parseIncomming()
+                self.__parseIncoming()
                 return self.response
         return None
 
-    def __parseIncomming(self):
+    def __parseIncoming(self):
         '''
             Main Worker
             parse incoming serial lines
@@ -88,29 +90,16 @@ class Gateway(object):
                              Payload: {payload}'.format(**self._incoming))
 
             '''
-                check if DB entry exists
-                if not create a new one
-            '''
-            self.__resetDBResult()
-            self._dbid = '_'.join([self._incoming['nodeid'], self._incoming['childid']])
-            '''
                 skip gateway
                 address: 0;0
             '''
             if self._incoming['nodeid'] == '0':
                 return None
-            self._dbresult = self._dbcursor.execute('''SELECT * FROM sensors WHERE id=?''', (self._dbid,)).fetchall()
-            self._log.debug('DB Select Result for {0}: {1}'.format(self._dbid,
-                                                                   self._dbresult))
-            if not self._dbresult:
-                self._dbcursor.execute('''INSERT INTO sensors(id, type)\
-                                        VALUES (?, ?)''', (self._dbid,
-                                                           self._incoming['subtype'])).fetchall()
-                self.__commitDB()
-                self._log.debug('DB Insert done: {0}'.format(self._dbid))
 
-    def __resetDBResult(self):
-        self._dbresult = None
+            self._dbresult = self._db.check(node=self._incoming['nodeid'],
+                                            sensor=self._incoming['childid'],
+                                            typ=self._incoming['subtype'])
+            self._log.debug('DB Results in parseIncoming: {0}'.format(self._dbresult))
 
     def __commitDB(self):
         self._db.commit()
@@ -155,9 +144,9 @@ class Gateway(object):
             self._serialConnection.close()
             self._serialConnection.open()
             self._serialIsConnected = True
-            log.info('serial started up on {0}, Baud {1}, Timeout {2}'.format(self._serialPort,
-                                                                              self._serialBaud,
-                                                                              self._serialTimeOut))
+            self._log.info('serial started up on {0}, Baud {1}, Timeout {2}'.format(self._serialPort,
+                                                                                    self._serialBaud,
+                                                                                    self._serialTimeOut))
         except serial.SerialException, e:
             self._log.error('serial connection failed. {0}'.format(e))
             self._serialIsConnected = False

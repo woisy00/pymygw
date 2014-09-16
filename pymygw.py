@@ -21,7 +21,6 @@ if config.DEBUG:
 else:
     log.setLevel(logging.NOTICE)
 
-
 log.debug('Try to open DB connection')
 db = Database.Database()
 
