@@ -1,22 +1,19 @@
 import serial
 from time import sleep
+import logging
 
 import config
 import MySensor
-from pymygw import db
-
-import logging
 
 
 class Gateway(object):
-    def __init__(self):
+    def __init__(self, db):
         self._maxNodes = config.MaxNodes
         self._maxChilds = config.MaxChilds
         self._template = config.MySensorStructureTemplate
         self._log = logging.getLogger('pymygw')
 
         self._db = db
-        #self._dbcursor = self._db.cursor()
         self._dbresult = None
 
         '''

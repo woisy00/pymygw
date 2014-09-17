@@ -14,7 +14,7 @@ import Database
 '''
 log = logging.getLogger('pymygw')
 if not log.handlers:
-    formatter = logging.Formatter("%(asctime)s - [%(levelname)s] %(message)s")
+    formatter = logging.Formatter("%(asctime)s [%(levelname)s] %(message)s")
     handler = logging.handlers.RotatingFileHandler(config.LogFile, maxBytes=4000000, backupCount=5)
     handler.setFormatter(formatter)
     log.addHandler(handler)
@@ -32,7 +32,7 @@ THREADS = []
 class GatewayThread(Thread):
     def __init__(self):
         self.alive = True
-        self.gateway = Gateway.Gateway()
+        self.gateway = Gateway.Gateway(db)
         Thread.__init__(self)
 
     def run(self):
@@ -52,7 +52,6 @@ def main():
     global THREADS
     log.info('starting up')
     thread = GatewayThread()
-    #thread.daemon = True
     thread.start()
     log.info('loop started')
     THREADS.append(thread)

@@ -1,7 +1,7 @@
 import sqlite3
-import config
-
 import logging
+
+import config
 
 
 class Database(object):
@@ -10,8 +10,9 @@ class Database(object):
         self._db = None
         self._cursor = None
         self._isConnected = False
-        self.__initDB()
         self._nodes = {}
+        self.__initDB()
+        self.__initNodes()
 
     def disconnect(self):
         if self._isConnected:
@@ -24,6 +25,18 @@ class Database(object):
             return self._db.cursor()
         except Exception, e:
             self._log.error('DB connect failed: {0}'.format(e))
+
+    def __initNodes(self):
+        c = self.__connect()
+        r = c.execute('''SELECT id, typ, openhab from sensors''')
+        if r is not None:
+            for e in r:
+                self._node, self._nodetyp, self._nodeopenhab = e
+                self._log.debug('Found {0} in DB: typ = {1}, openhab = {2}'.format(self._node,
+                                                                                   self._nodetyp,
+                                                                                   self._nodeopenhab))
+                self.__addtoNodes()
+        self.__closeCursor(c)
 
     def __initDB(self):
         c = self.__connect()
