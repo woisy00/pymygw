@@ -98,3 +98,10 @@ class Database(object):
                 return None
         self.__closeCursor(c)
         return self._nodes[self._node]
+
+    def get(self, Node=None):
+        if Node is None:
+            return self._nodes
+        else:
+            if Node in self._nodes:
+                return self._nodes[Node]

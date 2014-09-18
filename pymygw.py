@@ -1,5 +1,5 @@
-from threading import Thread
-import sys
+from tornado.ioloop import IOLoop, PeriodicCallback
+from tornado.web import Application
 import signal
 import logging
 import logging.handlers
@@ -7,6 +7,7 @@ import logging.handlers
 import config
 import Gateway
 import Database
+import Api
 
 
 '''
@@ -23,42 +24,38 @@ if config.DEBUG:
 else:
     log.setLevel(logging.NOTICE)
 
-log.debug('Try to open DB connection')
 db = Database.Database()
+TornadoLoop = None
+SerialLoop = None
+RestApi = Application([
+    (r'/api/nodes/([0-9]+_[0-9]+)', Api.Node),
+    (r'/api/nodes', Api.Nodes),
+])
 
-THREADS = []
 
-
-class GatewayThread(Thread):
-    def __init__(self):
-        self.alive = True
-        self.gateway = Gateway.Gateway(db)
-        Thread.__init__(self)
-
-    def run(self):
-        while self.alive:
-            self.gateway.loop()
-        self.gateway.stop()
+def startgw():
+    gw.loop()
 
 
 def stop(signal, frame):
+    global TornadoLoop
+    global SerialLoop
     log.info('CTRL-C recieved, stopping')
-    for t in THREADS:
-        t.alive = False
-    sys.exit(0)
+    SerialLoop.stop()
+    TornadoLoop.stop()
 
 
 def main():
-    global THREADS
+    global TornadoLoop
+    global SerialLoop
     log.info('starting up')
-    thread = GatewayThread()
-    thread.start()
-    log.info('loop started')
-    THREADS.append(thread)
-
+    SerialLoop = PeriodicCallback(startgw, 10)
+    SerialLoop.start()
+    RestApi.listen(5000)
+    TornadoLoop = IOLoop.instance()
+    TornadoLoop.start()
 
 if __name__ == "__main__":
     signal.signal(signal.SIGINT, stop)
+    gw = Gateway.Gateway(db)
     main()
-    while True:
-        signal.pause()

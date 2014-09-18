@@ -12,7 +12,6 @@ class Gateway(object):
         self._maxChilds = config.MaxChilds
         self._template = config.MySensorStructureTemplate
         self._log = logging.getLogger('pymygw')
-
         self._db = db
         self._dbresult = None
 
@@ -44,7 +43,10 @@ class Gateway(object):
             Main Loop
         '''
         if self._serialIsConnected:
-            self.response = self._serialConnection.readline()
+            try:
+                self.response = self._serialConnection.readline()
+            except:
+                return None
             if self.response:
                 self.response = self.response.rstrip(config.EOL)
                 self._log.info('incoming message: {0}'.format(self.response))
