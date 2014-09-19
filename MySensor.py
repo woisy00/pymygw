@@ -1,5 +1,14 @@
 import config
+from sqlalchemy import Column, ForeignKey, Integer, String
+from sqlalchemy.ext.declarative import declarative_base
+from sqlalchemy.orm import relationship
 
+Base = declarative_base()
+
+class MySensorNode(Base):
+    __tablename__ = 'sensors'
+    id = Column(String, primary_key=True)
+    
 
 class MySensor(object):
     def __init__(self):
@@ -42,6 +51,11 @@ class MySensor(object):
         self.__searchRequest()
         return self._answer
 
+    def message(self, m, db):
+        self._message = m
+        self._db = db
+        self.__process()
+
 
 class MySensorMessageType(MySensor):
     '''
@@ -50,6 +64,9 @@ class MySensorMessageType(MySensor):
     def __init__(self):
         self._dict = config.MySensorMessageType
         MySensor.__init__(self)
+
+    def __process(self):
+        pass
 
 
 class MySensorPresentation(MySensor):
@@ -60,6 +77,9 @@ class MySensorPresentation(MySensor):
         self._dict = config.MySensorPresentation
         MySensor.__init__(self)
 
+    def __process(self):
+        pass
+
 
 class MySensorSetReq(MySensor):
     '''
@@ -69,6 +89,9 @@ class MySensorSetReq(MySensor):
         self._dict = config.MySensorSetReq
         MySensor.__init__(self)
 
+    def __process(self):
+        pass
+
 
 class MySensorInternal(MySensor):
     '''
@@ -77,3 +100,33 @@ class MySensorInternal(MySensor):
     def __init__(self):
         self._dict = config.MySensorInternal
         MySensor.__init__(self)
+
+    def __process(self):
+        if self._message == self.id('I_BATTERY_LEVEL'):
+            pass
+        elif self._message == self.id('I_TIME'):
+            pass
+        elif self._message == self.id('I_VERSION'):
+            pass
+        elif self._message == self.id('I_ID_RESPONSE'):
+            pass
+        elif self._message == self.id('I_INCLUSION_MODE'):
+            pass
+        elif self._message == self.id('I_CONFIG'):
+            pass
+        elif self._message == self.id('I_FIND_PARENT'):
+            pass
+        elif self._message == self.id('I_FIND_PARENT_RESPONSE'):
+            pass
+        elif self._message == self.id('I_LOG_MESSAGE'):
+            pass
+        elif self._message == self.id('I_CHILDREN'):
+            pass
+        elif self._message == self.id('I_SKETCH_NAME'):
+            pass
+        elif self._message == self.id('I_SKETCH_VERSION'):
+            pass
+        elif self._message == self.id('I_REBOOT'):
+            pass
+        elif self._message == self.id('I_GATEWAY_READY'):
+            pass

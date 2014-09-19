@@ -76,6 +76,8 @@ class Gateway(object):
             self._incoming['childid'] = c
             self._incoming['messagetype'] = self._messagetype.name(m)
             self._incoming['ack'] = a
+            self._incoming['subtype'] = self.__toInt(m)
+            self._incoming['payload'] = p
             if self.__toInt(m) == self._messagetype.id('PRESENTATION'):
                 self._incoming['subtype'] = self._presentation.name(s)
             elif self.__toInt(m) == self._messagetype.id('SET') or \
@@ -83,26 +85,43 @@ class Gateway(object):
                 self._incoming['subtype'] = self._setreq.name(s)
             elif self.__toInt(m) == self._messagetype.id('INTERNAL'):
                 self._incoming['subtype'] = self._internal.name(s)
+                self.__Internal()
             else:
                 self._incoming['subtype'] = s
-            self._incoming['payload'] = p
-            self._log.debug('NodeID: {nodeid},\n\
-                             ChildID: {childid},\n\
-                             MessageType: {messagetype},\n\
-                             SubType: {subtype},\n\
-                             Payload: {payload}'.format(**self._incoming))
+
+            #self._log.debug('NodeID: {nodeid},\n\
+            #                 ChildID: {childid},\n\
+            #                 MessageType: {messagetype},\n\
+            #                 SubType: {subtype},\n\
+            #                 Payload: {payload}'.format(**self._incoming))
 
             '''
                 skip gateway
                 address: 0;0
             '''
-            if self._incoming['nodeid'] == '0':
+            if self._incoming['nodeid'] == '0' or self._incoming['nodeid'] == '255':
                 return None
 
             self._dbresult = self._db.check(node=self._incoming['nodeid'],
                                             sensor=self._incoming['childid'],
                                             typ=self._incoming['subtype'])
             self._log.debug('DB Results in parseIncoming: {0}'.format(self._dbresult))
+
+    def __Internal(self):
+        if self._incoming['subtype'] == 'I_ID_REQUEST':
+            '''
+                needs new id
+                todo DB: get new internal id
+            '''
+            newID = self._db.new()
+            if newID is not None:
+                self._cmd = {'nodeid': 255,
+                             'childid': 255,
+                             'messagetype': self._messagetype.id('INTERNAL'),
+                             'subtype': self._internal.id('I_ID_RESPONSE'),
+                             'payload': newID}
+                self.__sendSerial()
+                self._log.debug('Send ID_REQUEST: {0}'.format(self._cmd))
 
     def __isDebug(self):
         '''
@@ -135,7 +154,7 @@ class Gateway(object):
             if k not in self._cmd:
                 self._cmd[k] = self._template[k]
 
-        self._serialcmd = '{nodeid}{sep}{childid}{sep}{messagetype}{sep}{ack}{sep}{subtype}{sep}{payload}'.format(**self._cmd)
+        self._serialcmd = '{nodeid}{sep}{childid}{sep}{messagetype}{sep}{ack}{sep}{subtype}{sep}{payload}\n'.format(**self._cmd)
 
     def __connectSerial(self):
         try:
@@ -163,5 +182,5 @@ class Gateway(object):
     def __sendSerial(self):
         self.__prepareCommand()
         if self._serialIsConnected and self._serialIsWriteable:
-            self._serialConnection.write(self._serialcmd+config.EOL)
-            self._log.info('command send: {0}'.format(self._serialcmd.strip()))
+            self._serialConnection.write(self._serialcmd)
+            self._log.info('command send: {0}'.format(self._serialcmd))
