@@ -8,6 +8,7 @@ import config
 import Gateway
 import Database
 import Api
+import OpenHab
 
 
 '''
@@ -25,11 +26,12 @@ else:
     log.setLevel(logging.NOTICE)
 
 db = Database.Database()
+openhab = OpenHab.Openhab(db)
 TornadoLoop = None
 SerialLoop = None
 RestApi = Application([
-    (r'/api/nodes/([0-9]+_[0-9]+)', Api.Node),
-    (r'/api/nodes', Api.Nodes),
+    (r'/api/nodes/([0-9]+_[0-9]+)', Api.Node, dict(database=db, openhab=openhab)),
+    (r'/api/nodes', Api.Nodes, dict(database=db, openhab=openhab)),
 ])
 
 
@@ -51,7 +53,7 @@ def main():
     log.info('starting up')
     SerialLoop = PeriodicCallback(startgw, 10)
     SerialLoop.start()
-    RestApi.listen(5000)
+    RestApi.listen(config.APIPort)
     TornadoLoop = IOLoop.instance()
     TornadoLoop.start()
 

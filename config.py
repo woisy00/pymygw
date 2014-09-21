@@ -1,37 +1,49 @@
 '''
-Generic config
+    Generic config
 '''
 DEBUG = True
 LogFile = 'pymygw.log'
+APIPort = 5000
+
+'''
+    Openhab config
+'''
+OpenhabAPI = 'http://adugw.home:8080/rest/items/'
+OpenhabAPIList = 'item'
 
 
 '''
-Database
+    Arduino Serial config
 '''
-Database = '.pymygw.db'
-DatabaseTable = 'sensors'
-DatabaseTableCreate = 'CREATE TABLE IF NOT EXISTS {0} (id TEXT UNIQUE, typ TEXT, openhab TEXT)'.format(DatabaseTable)
-
-'''
-Arduino Serial config
-'''
-SerialPort = '/dev/ttyACM0'
+SerialPort = '/dev/ttyACM1'
 SerialBaud = 115200
 SerialTimeOut = 5
 
 
 '''
-MySensor generic config
+    MySensor generic config
 '''
 Seperator = ';'
 MaxNodes = 254
 MaxChilds = 254
 EOL = '\n'
+'''
+    units are metric
+'''
+UnitSystem = 'M'
 
 
 '''
-MySensor Serial Protocol Definition v1.4 (Beta)
-TODO: add link to serial protocol
+    Database
+'''
+Database = '.pymygw.db'
+DatabaseTable = 'sensors'
+DatabaseTableCreate = 'CREATE TABLE IF NOT EXISTS {0} (id TEXT UNIQUE, typ TEXT, openhab TEXT UNIQUE)'.format(DatabaseTable)
+
+
+'''
+    MySensor Serial Protocol Definition v1.4 (Beta)
+    TODO: add link to serial protocol
 
 '''
 MySensorStructureTemplate = {'nodeid': None,

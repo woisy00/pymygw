@@ -72,56 +72,44 @@ class Gateway(object):
 
             self._incoming = self._template
             n, c, m, a, s, p = self._splitresponse
+
             self._incoming['nodeid'] = n
             self._incoming['childid'] = c
             self._incoming['messagetype'] = self._messagetype.name(m)
             self._incoming['ack'] = a
-            self._incoming['subtype'] = self.__toInt(m)
+            self._incoming['subtype'] = self.__toInt(s)
             self._incoming['payload'] = p
             if self.__toInt(m) == self._messagetype.id('PRESENTATION'):
-                self._incoming['subtype'] = self._presentation.name(s)
+                self._processby = self._presentation
             elif self.__toInt(m) == self._messagetype.id('SET') or \
                     self.__toInt(m) == self._messagetype.id('REQ'):
-                self._incoming['subtype'] = self._setreq.name(s)
+                self._processby = self._setreq
             elif self.__toInt(m) == self._messagetype.id('INTERNAL'):
-                self._incoming['subtype'] = self._internal.name(s)
-                self.__Internal()
+                self._processby = self._internal
             else:
-                self._incoming['subtype'] = s
+                self._log.debug('Skipping {0}: unknown messagetype'.format(self._incoming))
+                return
+            #    self._incoming['subtype'] = s
 
-            #self._log.debug('NodeID: {nodeid},\n\
-            #                 ChildID: {childid},\n\
-            #                 MessageType: {messagetype},\n\
-            #                 SubType: {subtype},\n\
-            #                 Payload: {payload}'.format(**self._incoming))
+            self._log.debug('NodeID: {nodeid},\n\
+                             ChildID: {childid},\n\
+                             MessageType: {messagetype},\n\
+                             SubType: {subtype},\n\
+                             Payload: {payload}'.format(**self._incoming))
 
+            # pass the parsed message to the matching mysensors obj
+            # returns != False if we need to send a serial message
             '''
                 skip gateway
                 address: 0;0
             '''
-            if self._incoming['nodeid'] == '0' or self._incoming['nodeid'] == '255':
+            if n in ('0'):
+                self._log.debug('Skipping Node {0} Message: gw node'.format(n))
                 return None
 
-            self._dbresult = self._db.check(node=self._incoming['nodeid'],
-                                            sensor=self._incoming['childid'],
-                                            typ=self._incoming['subtype'])
-            self._log.debug('DB Results in parseIncoming: {0}'.format(self._dbresult))
-
-    def __Internal(self):
-        if self._incoming['subtype'] == 'I_ID_REQUEST':
-            '''
-                needs new id
-                todo DB: get new internal id
-            '''
-            newID = self._db.new()
-            if newID is not None:
-                self._cmd = {'nodeid': 255,
-                             'childid': 255,
-                             'messagetype': self._messagetype.id('INTERNAL'),
-                             'subtype': self._internal.id('I_ID_RESPONSE'),
-                             'payload': newID}
+            self._cmd = self._processby.message(self._incoming, self._db)
+            if self._cmd is not None:
                 self.__sendSerial()
-                self._log.debug('Send ID_REQUEST: {0}'.format(self._cmd))
 
     def __isDebug(self):
         '''

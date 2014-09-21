@@ -1,17 +1,10 @@
 import config
-from sqlalchemy import Column, ForeignKey, Integer, String
-from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy.orm import relationship
+import logging
 
-Base = declarative_base()
 
-class MySensorNode(Base):
-    __tablename__ = 'sensors'
-    id = Column(String, primary_key=True)
-    
-
-class MySensor(object):
+class MySensor():
     def __init__(self):
+        self._log = logging.getLogger('pymygw')
         '''
             RevertDict id -> Name
         '''
@@ -34,6 +27,9 @@ class MySensor(object):
     def __toInt(self, i):
         return int(float(i))
 
+    def process(self):
+        raise NotImplementedError()
+
     def name(self, i):
         self.__prepare(i, t='int')
         if self._request in self.RevertDict:
@@ -52,9 +48,13 @@ class MySensor(object):
         return self._answer
 
     def message(self, m, db):
+        self._cmd = None
         self._message = m
         self._db = db
-        self.__process()
+        self.process()
+        if self._cmd is not None:
+            self._log.debug('Created CMD: {0}'.format(self._cmd))
+        return self._cmd
 
 
 class MySensorMessageType(MySensor):
@@ -65,8 +65,9 @@ class MySensorMessageType(MySensor):
         self._dict = config.MySensorMessageType
         MySensor.__init__(self)
 
-    def __process(self):
-        pass
+    def process(self):
+        '''TODO'''
+        return self._cmd
 
 
 class MySensorPresentation(MySensor):
@@ -77,7 +78,8 @@ class MySensorPresentation(MySensor):
         self._dict = config.MySensorPresentation
         MySensor.__init__(self)
 
-    def __process(self):
+    def process(self):
+        '''TODO'''
         pass
 
 
@@ -89,8 +91,25 @@ class MySensorSetReq(MySensor):
         self._dict = config.MySensorSetReq
         MySensor.__init__(self)
 
-    def __process(self):
-        pass
+    def process(self):
+        self._log.debug('Processing Set/Req Message')
+        if self._message['messagetype'] == 'SET':
+            self.__set()
+
+    def __set(self):
+        self._log.debug('Message in set: {0}'.format(self._message))
+        c = self._db.check(node=self._message['nodeid'],
+                           child=self._message['childid'],
+                           typ=self.name(self._message['subtype']))
+        self._log.debug('Check DB Result for {0}: {1}'.format(self._message,
+                                                              c))
+        if c is None:
+            self._log.debug('Trying to add {0} to DB'.format(self._message))
+            a = self._db.add(node=self._message['nodeid'],
+                             child=self._message['childid'],
+                             typ=self.name(self._message['subtype']))
+            if a is None:
+                self._log.error('Add Node Failed: {0}'.format(self._message))
 
 
 class MySensorInternal(MySensor):
@@ -101,32 +120,65 @@ class MySensorInternal(MySensor):
         self._dict = config.MySensorInternal
         MySensor.__init__(self)
 
-    def __process(self):
-        if self._message == self.id('I_BATTERY_LEVEL'):
+    def process(self):
+        self._log.debug('Processing Internal Message')
+        if self._message['subtype'] == self.id('I_BATTERY_LEVEL'):
             pass
-        elif self._message == self.id('I_TIME'):
+        elif self._message['subtype'] == self.id('I_TIME'):
             pass
-        elif self._message == self.id('I_VERSION'):
+        elif self._message['subtype'] == self.id('I_VERSION'):
             pass
-        elif self._message == self.id('I_ID_RESPONSE'):
+        elif self._message['subtype'] == self.id('I_ID_REQUEST'):
+            self._log.debug('Processed by I_ID_REQUEST: {0}'.format(self._message))
+            self.__IDRequest()
+        elif self._message['subtype'] == self.id('I_ID_RESPONSE'):
             pass
-        elif self._message == self.id('I_INCLUSION_MODE'):
+        elif self._message['subtype'] == self.id('I_INCLUSION_MODE'):
             pass
-        elif self._message == self.id('I_CONFIG'):
+        elif self._message['subtype'] == self.id('I_CONFIG'):
+            self._log.debug('Processed by I_CONFIG: {0}'.format(self._message))
+            self.__Config()
+        elif self._message['subtype'] == self.id('I_FIND_PARENT'):
             pass
-        elif self._message == self.id('I_FIND_PARENT'):
+        elif self._message['subtype'] == self.id('I_FIND_PARENT_RESPONSE'):
             pass
-        elif self._message == self.id('I_FIND_PARENT_RESPONSE'):
+        elif self._message['subtype'] == self.id('I_LOG_MESSAGE'):
             pass
-        elif self._message == self.id('I_LOG_MESSAGE'):
+        elif self._message['subtype'] == self.id('I_CHILDREN'):
             pass
-        elif self._message == self.id('I_CHILDREN'):
+        elif self._message['subtype'] == self.id('I_SKETCH_NAME'):
             pass
-        elif self._message == self.id('I_SKETCH_NAME'):
+        elif self._message['subtype'] == self.id('I_SKETCH_VERSION'):
             pass
-        elif self._message == self.id('I_SKETCH_VERSION'):
+        elif self._message['subtype'] == self.id('I_REBOOT'):
             pass
-        elif self._message == self.id('I_REBOOT'):
+        elif self._message['subtype'] == self.id('I_GATEWAY_READY'):
             pass
-        elif self._message == self.id('I_GATEWAY_READY'):
-            pass
+
+    def __IDRequest(self):
+        '''
+            create new id for unknown nodes
+            and send it as ID_RESPONSE
+        '''
+        newID = self._db.freeID()
+        if newID is not None:
+            self._cmd = {'nodeid': 255,
+                         'childid': 255,
+                         'messagetype': config.MySensorMessageType['INTERNAL']['id'],
+                         'subtype': self.id('I_ID_RESPONSE'),
+                         'payload': newID}
+
+    def __Config(self):
+        '''
+            return config
+            only used for get_metric afaik
+        '''
+        self._cmd = {'nodeid': self._message['nodeid'],
+                     'childid': 255,
+                     'messagetype': config.MySensorMessageType['INTERNAL']['id'],
+                     'subtype': self.id('I_CONFIG'),
+                     'payload': config.UnitSystem}
+
+
+
+
