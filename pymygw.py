@@ -26,7 +26,7 @@ else:
     log.setLevel(logging.NOTICE)
 
 db = Database.Database()
-openhab = OpenHab.Openhab(db)
+openhab = OpenHab.Openhab()
 TornadoLoop = None
 SerialLoop = None
 RestApi = Application([

@@ -1,10 +1,13 @@
 import config
 import logging
 
+import OpenHab
+
 
 class MySensor():
     def __init__(self):
         self._log = logging.getLogger('pymygw')
+        self._openhab = OpenHab.Openhab()
         '''
             RevertDict id -> Name
         '''
@@ -103,6 +106,7 @@ class MySensorSetReq(MySensor):
                            typ=self.name(self._message['subtype']))
         self._log.debug('Check DB Result for {0}: {1}'.format(self._message,
                                                               c))
+        #add new node/child to db
         if c is None:
             self._log.debug('Trying to add {0} to DB'.format(self._message))
             a = self._db.add(node=self._message['nodeid'],
@@ -110,6 +114,10 @@ class MySensorSetReq(MySensor):
                              typ=self.name(self._message['subtype']))
             if a is None:
                 self._log.error('Add Node Failed: {0}'.format(self._message))
+        #push new value to openhab
+        elif c['openhab'] is not None:
+            self._log.debug('Try to push value to openhab: {0}'.format(self._message))
+            self._openhab.Set(c['openhab'], value=self._message['payload'])
 
 
 class MySensorInternal(MySensor):

@@ -8,7 +8,7 @@ APIPort = 5000
 '''
     Openhab config
 '''
-OpenhabAPI = 'http://adugw.home:8080/rest/items/'
+OpenhabAPI = 'http://adugw.home:8080/rest/items'
 OpenhabAPIList = 'item'
 
 
