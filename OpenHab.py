@@ -7,12 +7,8 @@ import config
 class Openhab(object):
     def __init__(self):
         self._log = logging.getLogger('pymygw')
-        #self._rest = '{0}?type=json'.format(config.OpenhabAPI)
         self._rest = config.OpenhabAPI
         self._items = {}
-
-        #self._requestheaders = {'Content-Type': 'text/plain',
-        #                        'Accept': 'application/json'}
 
         self.__getItems()
 

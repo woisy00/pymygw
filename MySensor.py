@@ -1,3 +1,5 @@
+from time import time
+
 import config
 import logging
 
@@ -31,6 +33,7 @@ class MySensor():
         return int(float(i))
 
     def process(self):
+        # replaced by child process
         raise NotImplementedError()
 
     def name(self, i):
@@ -133,7 +136,8 @@ class MySensorInternal(MySensor):
         if self._message['subtype'] == self.id('I_BATTERY_LEVEL'):
             pass
         elif self._message['subtype'] == self.id('I_TIME'):
-            pass
+            self._log.debug('Processed by I_TIME: {0}'.format(self._message))
+            self.__GetTime()
         elif self._message['subtype'] == self.id('I_VERSION'):
             pass
         elif self._message['subtype'] == self.id('I_ID_REQUEST'):
@@ -187,6 +191,11 @@ class MySensorInternal(MySensor):
                      'subtype': self.id('I_CONFIG'),
                      'payload': config.UnitSystem}
 
-
+    def __GetTime(self):
+        self._cmd = {'nodeid': self._message['nodeid'],
+                     'childid': self._message['childid'],
+                     'messagetype': config.MySensorMessageType['INTERNAL']['id'],
+                     'subtype': self.id('I_TIME'),
+                     'payload': int(time())}
 
 
