@@ -133,6 +133,8 @@ class MySensorInternal(MySensor):
 
     def process(self):
         self._log.debug('Processing Internal Message')
+        self._messagetype = config.MySensorMessageType['INTERNAL']['id']
+
         if self._message['subtype'] == self.id('I_BATTERY_LEVEL'):
             pass
         elif self._message['subtype'] == self.id('I_TIME'):
@@ -176,7 +178,7 @@ class MySensorInternal(MySensor):
         if newID is not None:
             self._cmd = {'nodeid': 255,
                          'childid': 255,
-                         'messagetype': config.MySensorMessageType['INTERNAL']['id'],
+                         'messagetype': self._messagetype,
                          'subtype': self.id('I_ID_RESPONSE'),
                          'payload': newID}
 
@@ -187,14 +189,14 @@ class MySensorInternal(MySensor):
         '''
         self._cmd = {'nodeid': self._message['nodeid'],
                      'childid': 255,
-                     'messagetype': config.MySensorMessageType['INTERNAL']['id'],
+                     'messagetype': self._messagetype,
                      'subtype': self.id('I_CONFIG'),
                      'payload': config.UnitSystem}
 
     def __GetTime(self):
         self._cmd = {'nodeid': self._message['nodeid'],
                      'childid': self._message['childid'],
-                     'messagetype': config.MySensorMessageType['INTERNAL']['id'],
+                     'messagetype': self._messagetype,
                      'subtype': self.id('I_TIME'),
                      'payload': int(time())}
 

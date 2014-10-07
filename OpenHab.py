@@ -58,7 +58,7 @@ class Openhab(object):
         if r.status_code == requests.codes.ok:
             if len(r.content) > 0:
                 try:
-                    self._response = r.json
+                    self._response = r.json()
                 except Exception, e:
                     self._log.error('Openhab json load failed error: {0} with content: {1}'.format(e, r.content))
         else:
