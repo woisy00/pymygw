@@ -3,13 +3,10 @@ from time import time
 import config
 import logging
 
-import OpenHab
-
 
 class MySensor():
     def __init__(self):
         self._log = logging.getLogger('pymygw')
-        self._openhab = OpenHab.Openhab()
         '''
             RevertDict id -> Name
         '''
@@ -93,9 +90,10 @@ class MySensorSetReq(MySensor):
     '''
         MySensor Set and Request Mapping Object
     '''
-    def __init__(self):
+    def __init__(self, openhab):
         self._dict = config.MySensorSetReq
         MySensor.__init__(self)
+        self._openhab = openhab
 
     def process(self):
         self._log.debug('Processing Set/Req Message')

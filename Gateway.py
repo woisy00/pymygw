@@ -7,7 +7,7 @@ import MySensor
 
 
 class Gateway(object):
-    def __init__(self, db):
+    def __init__(self, db, openhab):
         self._maxNodes = config.MaxNodes
         self._maxChilds = config.MaxChilds
         self._template = config.MySensorStructureTemplate
@@ -21,7 +21,7 @@ class Gateway(object):
         self._internal = MySensor.MySensorInternal()
         self._messagetype = MySensor.MySensorMessageType()
         self._presentation = MySensor.MySensorPresentation()
-        self._setreq = MySensor.MySensorSetReq()
+        self._setreq = MySensor.MySensorSetReq(openhab)
 
         self._serialPort = config.SerialPort
         self._serialBaud = config.SerialBaud

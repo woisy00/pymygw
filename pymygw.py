@@ -59,5 +59,5 @@ def main():
 
 if __name__ == "__main__":
     signal.signal(signal.SIGINT, stop)
-    gw = Gateway.Gateway(db)
+    gw = Gateway.Gateway(db, openhab)
     main()
