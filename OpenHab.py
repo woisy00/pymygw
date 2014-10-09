@@ -1,5 +1,6 @@
 import logging
 import requests
+from datetime import datetime
 
 import config
 
@@ -10,20 +11,26 @@ class Openhab(object):
         self._rest = config.OpenhabAPI
         self._items = {}
 
-        self.__getItems()
-
     def Items(self):
+        if not self._items:
+            self.__getItems()
+        else:
+            delta = datetime.now() - self._items['cache']
+            self._log.debug('Openhab Items Cache Delta: {0}'.format(delta.seconds))
+            if delta.seconds > config.OpenhabCacheTimeout:
+                self._log.info('Openhab Items Cache expired, reloading Items')
+                self.__getItems()
         return self._items
 
     def Set(self, item=None, value=None):
         if item is None or value is None:
             self._log.error('Openhab missing item or value: item={0}, value={0}'.format(item, value))
             return
-        elif item not in self._items:
+        elif item not in self.Items():
             self._log.error('Openhab unknown item: {0}'.format(item))
             return
 
-        otype = self._items[item]
+        otype = self.Items()[item]
         self._data = None
         if otype == 'ContactItem':
             if value == '0':
@@ -68,6 +75,7 @@ class Openhab(object):
         self._url = '{0}/?type=json'.format(self._rest)
         self.__requestGet()
         if self._response is not None:
+            self._items['cache'] = datetime.now()
             for e in self._response[config.OpenhabAPIList]:
                 self._items[e['name']] = e['type']
             self._log.debug('Openhab Items: {0}'.format(self._items))

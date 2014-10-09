@@ -10,6 +10,7 @@ APIPort = 5000
 '''
 OpenhabAPI = 'http://adugw.home:8080/rest/items'
 OpenhabAPIList = 'item'
+OpenhabCacheTimeout = 300
 
 
 '''
