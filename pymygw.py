@@ -15,6 +15,7 @@ import OpenHab
     Logging
 '''
 log = logging.getLogger('pymygw')
+log.propagate = False
 if not log.handlers:
     formatter = logging.Formatter("%(asctime)s [%(levelname)s] %(message)s")
     handler = logging.handlers.RotatingFileHandler(config.LogFile, maxBytes=4000000, backupCount=5)
@@ -50,7 +51,6 @@ def stop(signal, frame):
 def main():
     global TornadoLoop
     global SerialLoop
-    log.info('starting up')
     SerialLoop = PeriodicCallback(startgw, 10)
     SerialLoop.start()
     RestApi.listen(config.APIPort)

@@ -16,7 +16,6 @@ class MySensor():
 
     def __prepare(self, i, t='str'):
         if t == 'str' and isinstance(i, str):
-            #force upper case
             self._request = i.upper()
         elif t == 'int':
             self._request = self.__toInt(i)
@@ -54,6 +53,17 @@ class MySensor():
         self._cmd = None
         self._message = m
         self._db = db
+        self._log.debug('Parsed Message:\n\
+                         \tNodeID: {0},\n\
+                         \tChildID: {1},\n\
+                         \tMessageType: {2},\n\
+                         \tSubType: {3},\n\
+                         \tPayload: {4}'.format(self._message['nodeid'],
+                                                self._message['childid'],
+                                                self._message['messagetype'],
+                                                self.name(self._message['subtype']),
+                                                self._message['payload']))
+
         self.process()
         if self._cmd is not None:
             self._log.debug('Created CMD: {0}'.format(self._cmd))
@@ -117,7 +127,26 @@ class MySensorSetReq(MySensor):
         #push new value to openhab
         elif c['openhab'] is not None:
             self._log.debug('Try to push value to openhab: {0}'.format(self._message))
-            self._openhab.Set(c['openhab'], value=self._message['payload'])
+            r = self._openhab.Set(c['openhab'], value=self._message['payload'])
+            if r:
+                self._log.info('Openhab updated successfully:\n\
+                                Node: {0},\n\
+                                Sensor: {1}\n\
+                                Openhab: {2}\n\
+                                Value: {3}'.format(self._message['nodeid'],
+                                                   self._message['childid'],
+                                                   c['openhab'],
+                                                   self._message['payload']))
+
+            else:
+                self._log.error('Openhab update failed:\n\
+                                 Node: {0},\n\
+                                 Sensor: {1}\n\
+                                 Openhab: {2}\n\
+                                 Value: {3}'.format(self._message['nodeid'],
+                                                    self._message['childid'],
+                                                    c['openhab'],
+                                                    self._message['payload']))
 
 
 class MySensorInternal(MySensor):

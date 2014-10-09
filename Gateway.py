@@ -89,13 +89,6 @@ class Gateway(object):
             else:
                 self._log.debug('Skipping {0}: unknown messagetype'.format(self._incoming))
                 return
-            #    self._incoming['subtype'] = s
-
-            self._log.debug('NodeID: {nodeid},\n\
-                             ChildID: {childid},\n\
-                             MessageType: {messagetype},\n\
-                             SubType: {subtype},\n\
-                             Payload: {payload}'.format(**self._incoming))
 
             # pass the parsed message to the matching mysensors obj
             # returns != False if we need to send a serial message
@@ -103,7 +96,7 @@ class Gateway(object):
                 skip gateway
                 address: 0;0
             '''
-            if n in ('0'):
+            if self._incoming['nodeid'] == 0:
                 self._log.debug('Skipping Node {0} Message: gw node'.format(n))
                 return None
 

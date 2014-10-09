@@ -22,6 +22,7 @@ class Openhab(object):
         return self._items
 
     def Set(self, item=None, value=None):
+        self._ok = False
         if item is None or value is None:
             self._log.error('Openhab missing item or value: item={0}, value={0}'.format(item, value))
             return
@@ -44,7 +45,7 @@ class Openhab(object):
             self.__requestPut()
         else:
             self._log.error('Openhab cant parse value: {0} for item: {1}'.format(value, item))
-        return
+        return self._ok
 
     def __requestPut(self):
         h = {'Content-Type': 'text/plain',
@@ -62,11 +63,13 @@ class Openhab(object):
 
     def __requestCheckandParse(self, r):
         if r.status_code == requests.codes.ok:
+            self._ok = True
             if len(r.content) > 0:
                 try:
                     self._response = r.json()
                 except Exception, e:
                     self._log.error('Openhab json load failed error: {0} with content: {1}'.format(e, r.content))
+                    self._ok = False
         else:
             self._log.error('Openhab get error {0} with HTTP Code: {1}'.format(r.content, r.status_code))
 
