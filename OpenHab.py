@@ -16,7 +16,6 @@ class Openhab(object):
             self.__getItems()
         else:
             delta = datetime.now() - self._items['cache']
-            self._log.debug('Openhab Items Cache Delta: {0}'.format(delta.seconds))
             if delta.seconds > config.OpenhabCacheTimeout:
                 self._log.info('Openhab Items Cache expired, reloading Items')
                 self.__getItems()

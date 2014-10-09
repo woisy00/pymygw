@@ -105,8 +105,7 @@ class MySensorSetReq(MySensor):
         c = self._db.check(node=self._message['nodeid'],
                            child=self._message['childid'],
                            typ=self.name(self._message['subtype']))
-        self._log.debug('Check DB Result for {0}: {1}'.format(self._message,
-                                                              c))
+
         #add new node/child to db
         if c is None:
             self._log.debug('Trying to add {0} to DB'.format(self._message))
