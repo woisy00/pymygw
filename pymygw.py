@@ -24,7 +24,7 @@ if not log.handlers:
 if config.DEBUG:
     log.setLevel(logging.DEBUG)
 else:
-    log.setLevel(logging.NOTICE)
+    log.setLevel(logging.INFO)
 
 db = Database.Database()
 openhab = OpenHab.Openhab()
