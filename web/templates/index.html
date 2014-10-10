@@ -61,9 +61,9 @@
     var ohabvalue = $(parenttr).find("select#openhabvalue").val();
     if( ohabvalue ) {
      $.post("http://adugw.home:5000/do",
-      { "action"  : "update",
-        "sensor"  : sensor,
-        "openhab" : ohabvalue },
+      JSON.stringify({ "action"  : "update",
+                       "sensor"  : sensor,
+                       "openhab" : ohabvalue }),
       function(data,status){
          console.log("Data: " + data + "\nStatus: " + status);
       });
