@@ -1,12 +1,15 @@
 pymygw
 ======
 
-a mysensors to openhab gw based on https://github.com/wbcode/ham
+a [mysensors](http://www.mysensors.org/) to openhab gw based on https://github.com/wbcode/ham 
+
+**MySensors Serial Protocol (1.4) support only**
 
 ### Requirements
 
 - an arduino mysensors serial gateway connected via usb/serial on a linux host
-- an openhab installation (not required for testing, but it would be usefull  :) )
+- an openhab installation (not required for testing, but it would be usefull)
+ - configured openhab items (atm only NumberItems are supported)
 - some sensors
 - python pip installed
 
@@ -22,7 +25,7 @@ a mysensors to openhab gw based on https://github.com/wbcode/ham
 
 ### Configuration
 
-change config.py
+config.py
 ```python
 OpenhabAPI = 'http://adugw.home:8080/rest/items'
 
@@ -33,10 +36,13 @@ SerialPort = '/dev/ttyACM0'
 ### Start
 ```bash
     cd <<installdirectory>>
-    python pymygw.home
+    python pymygw.py
 ```
 
-### TODO
-- Webinterface to "glue" sensors to openhab
+### Webinterface
+The gateway offers a simple Webinterface on Port 5000 to "glue" sensors to openhab items.
 
-
+Edit config.py to change the port
+```python
+WebPort = 5000
+```
