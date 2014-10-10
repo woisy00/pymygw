@@ -1,5 +1,7 @@
-from tornado.ioloop import IOLoop, PeriodicCallback
-from tornado.web import Application
+from tornado.ioloop import IOLoop
+from tornado.web import Application, StaticFileHandler
+from threading import Thread
+import os
 import signal
 import logging
 import logging.handlers
@@ -7,8 +9,8 @@ import logging.handlers
 import config
 import Gateway
 import Database
-import Api
 import OpenHab
+import Webinterface
 
 
 '''
@@ -26,38 +28,48 @@ if config.DEBUG:
 else:
     log.setLevel(logging.INFO)
 
+
 db = Database.Database()
 openhab = OpenHab.Openhab()
 TornadoLoop = None
-SerialLoop = None
-RestApi = Application([
-    (r'/api/nodes/([0-9]+_[0-9]+)', Api.Node, dict(database=db, openhab=openhab)),
-    (r'/api/nodes', Api.Nodes, dict(database=db, openhab=openhab)),
+Web = Application([
+    (r'/do', Webinterface.CommandHandler, dict(database=db, openhab=openhab)),
+    (r'/static/(.*)', StaticFileHandler, {'path': os.path.join(config.WebDir, 'static')}),
+    (r'/', Webinterface.IndexHandler, dict(database=db, openhab=openhab)),
 ])
+logging.getLogger("tornado.access").addHandler(handler)
+logging.getLogger("tornado.access").propagate = False
+logging.getLogger("tornado.application").addHandler(handler)
+logging.getLogger("tornado.application").propagate = False
+logging.getLogger("tornado.general").addHandler(handler)
+logging.getLogger("tornado.general").propagate = False
 
 
-def startgw():
-    gw.loop()
+class SerialThread(Thread):
+    def __init__(self):
+        Thread.__init__(self)
+        self.gw = Gateway.Gateway(db, openhab)
+
+    def run(self):
+        while True:
+            self.gw.loop()
 
 
 def stop(signal, frame):
     global TornadoLoop
-    global SerialLoop
     log.info('CTRL-C recieved, stopping')
-    SerialLoop.stop()
     TornadoLoop.stop()
 
 
 def main():
     global TornadoLoop
-    global SerialLoop
-    SerialLoop = PeriodicCallback(startgw, 10)
-    SerialLoop.start()
-    RestApi.listen(config.APIPort)
+    serialGW = SerialThread()
+    serialGW.daemon = True
+    serialGW.start()
+    Web.listen(config.WebPort)
     TornadoLoop = IOLoop.instance()
     TornadoLoop.start()
 
 if __name__ == "__main__":
     signal.signal(signal.SIGINT, stop)
-    gw = Gateway.Gateway(db, openhab)
     main()

@@ -3,7 +3,12 @@
 '''
 DEBUG = True
 LogFile = 'pymygw.log'
-APIPort = 5000
+
+'''
+    Web Config
+'''
+WebPort = 5000
+WebDir = 'web'
 
 '''
     Openhab config

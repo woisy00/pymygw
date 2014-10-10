@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>PyMyGW Webinterface</title>
+
+    <link href="static/bootstrap/css/bootstrap.min.css" rel="stylesheet">
+ </head>
+ <body>
+  <div class="container">
+   <h2>Items</h2>
+   <table class="table table-bordered table-hover">
+    <thead>
+     <tr>
+      <th>Node</th>
+      <th>Sensor</th>
+      <th>Sensor Typ</th>
+      <th>Openhab</th>
+      <th>Action</th>
+     </tr>
+    </thead>
+    <tbody>
+     {% for sensor, svalue in items.iteritems() %}
+      <tr id="sensor">
+       <td>{{ sensor.split('_')[0] }}</td>
+       <td>{{ sensor.split('_')[1] }}</td>
+       <td>{{ svalue.typ }}</td>
+       {% if svalue.openhab is not none %}
+       <td id="openhabvalue">{{ svalue.openhab }}</td>
+       {% else %}
+        <td>
+         <select id="openhabvalue">
+           <option value="">----</option>
+          {% for o in openhab %}
+           <option value="{{ o }}">{{ o }}</option>
+          {% endfor %}
+         </select>
+        </td>
+       {% endif %}
+       <td>
+        {% if svalue.openhab is none %}
+         <button type="button" class="btn btn-success btn-xs add" id="{{ sensor }}"><span class="glyphicon glyphicon-plus"></span> Add</button>
+        {% else %}
+         <button type="button" class="btn btn-danger btn-xs delete" id="{{ sensor }}"><span class="glyphicon glyphicon-remove"></span> Delete</button>
+        {% endif %}
+       </td>
+      </tr>
+     {% endfor %}
+    </tbody>
+   </table>
+  </div>
+  <script src="static/jquery.min.js" type="text/javascript"></script>
+
+  <script>
+  $(document).ready( function() {
+   $(".add").click(function () {
+    var parenttr = $(this).closest("tr");
+    var sensor = $(this).attr("id");
+    var ohabvalue = $(parenttr).find("select#openhabvalue").val();
+    if( ohabvalue ) {
+     $.post("http://adugw.home:5000/do",
+      { "action"  : "update",
+        "sensor"  : sensor,
+        "openhab" : ohabvalue },
+      function(data,status){
+         console.log("Data: " + data + "\nStatus: " + status);
+      });
+     location.reload();
+    };
+   });
+
+   $(".delete").click(function () {
+    var parenttr = $(this).closest("tr");
+    var sensor = $(this).attr("id");
+    var ohabvalue = $(parenttr).find("td#openhabvalue").text();
+    console.log(parenttr);
+    console.log(sensor);
+    console.log(ohabvalue);
+   });
+  });
+
+  </script>
+ </body>

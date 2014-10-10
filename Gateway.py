@@ -67,7 +67,7 @@ class Gateway(object):
 
         if self.__isLongEnough():
             if self.__isDebug():
-                self._log.debug('got debug message: {0}'.format(self.response))
+                self._log.info('Skipping debug message: {0}'.format(self.response))
                 return None
 
             self._incoming = self._template

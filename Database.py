@@ -120,8 +120,8 @@ class Database(object):
                                                                  self._nodes[self._node]))
         return True
 
-    def glue(self, node=None, openhab=None):
-        if node is None or openhab is None:
+    def update(self, node=None, openhab=None):
+        if node is None:
             return None
         if self.get(Node=node) is None:
             self._log.error('Node {0} unknown, can not glue to {1}'.format(node,
@@ -135,6 +135,6 @@ class Database(object):
                                                                          e))
             return None
         self.__initNodes()
-        self._log.info('Glued {0} to {1}'.format(node, openhab))
+        self._log.info('Updated Sensor {0} to Openhab {1}'.format(node, openhab))
         return self.get(Node=node)
 
