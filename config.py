@@ -49,7 +49,7 @@ DatabaseTableCreate = 'CREATE TABLE IF NOT EXISTS {0} (id TEXT UNIQUE, typ TEXT,
 
 '''
     MySensor Serial Protocol Definition v1.4 (Beta)
-    TODO: add link to serial protocol
+    http://www.mysensors.org/build/serial_api
 
 '''
 MySensorStructureTemplate = {'nodeid': None,
