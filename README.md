@@ -5,6 +5,11 @@ a [mysensors](http://www.mysensors.org/) to openhab gw based on https://github.c
 
 **MySensors Serial Protocol (1.4) support only**
 
+
+[BLOG Post](http://www.the-hawkes.de/pymygw-a-simple-mysensors-gateway.html)
+
+
+
 ### Requirements
 
 - an arduino mysensors serial gateway connected via usb/serial on a linux host
