@@ -58,7 +58,7 @@ class Openhab(object):
                              timeout=5)
         except Exception, e:
             self._log.error('Exception on Openhab Put: {0}'.format(e))
-            return False
+            return
         self.__requestCheckandParse(r)
 
     def __requestGet(self):
@@ -70,7 +70,7 @@ class Openhab(object):
                              timeout=5)
         except Exception, e:
             self._log.error('Exception on Openhab Put: {0}'.format(e))
-            return False
+            return
         self.__requestCheckandParse(r)
 
     def __requestCheckandParse(self, r):
@@ -83,7 +83,7 @@ class Openhab(object):
                     self._log.error('Openhab json load failed error: {0} with content: {1}'.format(e, r.content))
                     self._ok = False
         else:
-            self._log.error('Openhab get error {0} with HTTP Code: {1}'.format(r.content, r.status_code))
+            self._log.error('Openhab got error {0} with HTTP Code: {1}'.format(r.content, r.status_code))
 
     def __getItems(self):
         self._url = '{0}/?type=json'.format(self._rest)
