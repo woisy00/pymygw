@@ -50,15 +50,27 @@ class Openhab(object):
     def __requestPut(self):
         h = {'Content-Type': 'text/plain',
              'Accept': 'application/json'}
-        r = requests.put(url=self._url,
-                         data=self._data,
-                         headers=h)
+        try:
+
+            r = requests.put(url=self._url,
+                             data=self._data,
+                             headers=h,
+                             timeout=5)
+        except Exception, e:
+            self._log.error('Exception on Openhab Put: {0}'.format(e))
+            return False
         self.__requestCheckandParse(r)
 
     def __requestGet(self):
         self._response = None
         h = {'Accept': 'application/json'}
-        r = requests.get(url=self._url, headers=h)
+        try:
+            r = requests.get(url=self._url,
+                             headers=h,
+                             timeout=5)
+        except Exception, e:
+            self._log.error('Exception on Openhab Put: {0}'.format(e))
+            return False
         self.__requestCheckandParse(r)
 
     def __requestCheckandParse(self, r):
