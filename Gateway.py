@@ -91,7 +91,7 @@ class Gateway(object):
                 return
 
             # pass the parsed message to the matching mysensors obj
-            # returns != False if we need to send a serial message
+            # returns != None if we need to send a serial message
             '''
                 skip gateway
                 address: 0;0
