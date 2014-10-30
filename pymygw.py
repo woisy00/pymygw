@@ -29,13 +29,13 @@ else:
     log.setLevel(logging.INFO)
 
 
-db = Database.Database()
+#db = Database.Database()
 openhab = OpenHab.Openhab()
 TornadoLoop = None
 Web = Application([
-    (r'/do', Webinterface.CommandHandler, dict(database=db, openhab=openhab)),
+    (r'/do', Webinterface.CommandHandler, dict(openhab=openhab)),
     (r'/static/(.*)', StaticFileHandler, {'path': os.path.join(config.WebDir, 'static')}),
-    (r'/', Webinterface.IndexHandler, dict(database=db, openhab=openhab)),
+    (r'/', Webinterface.IndexHandler, dict(openhab=openhab)),
 ])
 logging.getLogger("tornado.access").addHandler(handler)
 logging.getLogger("tornado.access").propagate = False
@@ -48,7 +48,7 @@ logging.getLogger("tornado.general").propagate = False
 class SerialThread(Thread):
     def __init__(self):
         Thread.__init__(self)
-        self.gw = Gateway.Gateway(db, openhab)
+        self.gw = Gateway.Gateway(openhab)
 
     def run(self):
         while True:

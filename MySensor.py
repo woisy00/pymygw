@@ -2,6 +2,7 @@ from time import time
 
 import config
 import logging
+import Database
 
 
 class MySensor():
@@ -52,7 +53,7 @@ class MySensor():
     def message(self, m, db):
         self._cmd = None
         self._message = m
-        self._db = db
+        self._db = Database.Database()
         self._log.debug('Parsed Message:\n\
                          \tNodeID: {0},\n\
                          \tChildID: {1},\n\

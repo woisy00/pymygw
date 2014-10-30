@@ -5,6 +5,7 @@ import logging
 import json
 
 import config
+import Database
 
 templateFile = "index.html"
 templateLoader = FileSystemLoader(searchpath=os.path.join(config.WebDir, 'templates'))
@@ -13,11 +14,11 @@ template = templateEnv.get_template(templateFile)
 
 
 class IndexHandler(RequestHandler):
-    def initialize(self, database, openhab):
+    def initialize(self, openhab):
         self._logging = logging.getLogger('pymygw')
-        self._database = database
+        self._db = Database.Database()
         self._openhab = openhab
-        self._output = template.render(items=self._database.get(),
+        self._output = template.render(items=self._db.get(),
                                        openhab=self.__prepareOpenhabItems())
 
     def get(self):
@@ -32,9 +33,9 @@ class IndexHandler(RequestHandler):
 
 
 class CommandHandler(RequestHandler):
-    def initialize(self, database, openhab):
+    def initialize(self, openhab):
         self._logging = logging.getLogger('pymygw')
-        self._database = database
+        self._db = Database.Database()
         self._openhab = openhab
 
     def post(self):
@@ -60,7 +61,7 @@ class CommandHandler(RequestHandler):
             raise HTTPError(400, 'Action unknown {0}'.format(self._action))
 
     def __checkSensor(self):
-        if self._database.get(Node=self._sensor) is None:
+        if self._db.get(Node=self._sensor) is None:
             raise HTTPError(400, 'Sensor unknown {0}'.format(self._sensor))
 
     def __checkOpenhab(self):
@@ -68,13 +69,13 @@ class CommandHandler(RequestHandler):
             raise HTTPError(400, 'Openhab Item unknown {0}'.format(self._ohitem))
 
     def __delete(self):
-        r = self._database.update(node=self._sensor)
+        r = self._db.update(node=self._sensor)
         if r is None:
             raise HTTPError(400, 'Delete failed {0}'.format(self._sensor))
         self.set_status(200, reason='OK')
 
     def __update(self):
-        r = self._database.update(node=self._sensor, openhab=self._ohitem)
+        r = self._db.update(node=self._sensor, openhab=self._ohitem)
         if r is None:
             raise HTTPError(400, 'Update failed {0}, {1}'.format(self._sensor, self._ohitem))
         self.set_status(200, reason='OK')

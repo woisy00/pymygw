@@ -12,7 +12,6 @@ class Database(object):
         self._isConnected = False
         self._nodes = {}
         self.__initDB()
-        self.__initNodes()
 
     def disconnect(self):
         if self._isConnected:
@@ -26,7 +25,7 @@ class Database(object):
         except Exception, e:
             self._log.error('DB connect failed: {0}'.format(e))
 
-    def __initNodes(self):
+    def initNodes(self):
         self._dbresult = self._cursor.execute('''SELECT id, typ, openhab from sensors''').fetchall()
         if self._dbresult is not None:
             for e in self._dbresult:
@@ -40,6 +39,7 @@ class Database(object):
         self.__connect()
         self._cursor.execute(config.DatabaseTableCreate)
         self._db.commit()
+        self.disconnect()
 
     def __addtoNodes(self):
         self._nodes[self._node] = {'typ': self._nodetyp,
@@ -47,7 +47,7 @@ class Database(object):
 
     def __getNodesfromDB(self):
         try:
-            self._dbresult = self._cursor.execute('''SELECT typ, obenhab FROM sensors WHERE id=?''', (self._node,)).fetchall
+            self._dbresult = self._cursor.execute('''SELECT typ, openhab FROM sensors WHERE id=?''', (self._node,)).fetchall()
             self._log.debug('DB Select Result for {0}: {1}'.format(self._node,
                                                                    self._dbresult))
         except:
@@ -94,6 +94,7 @@ class Database(object):
         return None
 
     def get(self, Node=None):
+        self.initNodes()
         if Node is None:
             return self._nodes
         else:
@@ -134,7 +135,7 @@ class Database(object):
             self._log.error('Exception during UPDATE of {0}: {1}'.format(node,
                                                                          e))
             return None
-        self.__initNodes()
+        self.initNodes()
         self._log.info('Updated Sensor {0} to Openhab {1}'.format(node, openhab))
         return self.get(Node=node)
 

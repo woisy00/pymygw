@@ -4,15 +4,17 @@ import logging
 
 import config
 import MySensor
+import Database
 
 
 class Gateway(object):
-    def __init__(self, db, openhab):
+    def __init__(self, openhab):
         self._maxNodes = config.MaxNodes
         self._maxChilds = config.MaxChilds
         self._template = config.MySensorStructureTemplate
         self._log = logging.getLogger('pymygw')
-        self._db = db
+        self._db = Database.Database()
+        self._db.initNodes()
         self._dbresult = None
 
         '''
