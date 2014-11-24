@@ -46,11 +46,11 @@ class Database(object):
                                    'openhab': self._nodeopenhab}
 
     def __getNodesfromDB(self):
-        try:
-            self._dbresult = self._cursor.execute('''SELECT typ, openhab FROM sensors WHERE id=?''', (self._node,)).fetchall()
+        self._dbresult = self._cursor.execute('''SELECT typ, openhab FROM sensors WHERE id=?''', (self._node,)).fetchall()
+        if self._dbresult:
             self._log.debug('DB Select Result for {0}: {1}'.format(self._node,
                                                                    self._dbresult))
-        except:
+        else:
             self._log.info('Node {0} not found in DB'.format(self._node))
             self._dbresult = None
 
@@ -59,11 +59,15 @@ class Database(object):
 
     def freeID(self):
         self._dbresult = self._cursor.execute('''SELECT id FROM sensors ORDER BY id DESC LIMIT 1''').fetchall()
-        for e in self._dbresult:
-            n, s = e[0].split('_')
-            n = int(n) + 1
-            return n
-        return None
+        if not self._dbresult:
+            #no old sensors
+            return 1
+        else:
+            for e in self._dbresult:
+                n, s = e[0].split('_')
+                n = int(n) + 1
+                return n
+            return None
 
     def check(self, node=None, child=None, typ=None):
         if node is None or child is None or typ is None:

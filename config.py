@@ -21,7 +21,7 @@ OpenhabCacheTimeout = 300
 '''
     Arduino Serial config
 '''
-SerialPort = '/dev/ttyACM1'
+SerialPort = '/dev/ttyACM0'
 SerialBaud = 115200
 SerialTimeOut = 5
 

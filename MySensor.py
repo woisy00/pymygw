@@ -202,6 +202,7 @@ class MySensorInternal(MySensor):
             and send it as ID_RESPONSE
         '''
         newID = self._db.freeID()
+        self._log.debug("new id {0}".format(newID))
         if newID is not None:
             self._cmd = {'nodeid': 255,
                          'childid': 255,
