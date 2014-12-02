@@ -8,8 +8,8 @@ import logging.handlers
 
 import config
 import Gateway
-import Database
 import OpenHab
+import MQTT
 import Webinterface
 
 
@@ -31,6 +31,7 @@ else:
 
 #db = Database.Database()
 openhab = OpenHab.Openhab()
+mqtt = MQTT.MQTT()
 TornadoLoop = None
 Web = Application([
     (r'/do', Webinterface.CommandHandler, dict(openhab=openhab)),
@@ -48,7 +49,7 @@ logging.getLogger("tornado.general").propagate = False
 class SerialThread(Thread):
     def __init__(self):
         Thread.__init__(self)
-        self.gw = Gateway.Gateway(openhab)
+        self.gw = Gateway.Gateway(openhab, mqtt)
 
     def run(self):
         while True:
@@ -59,6 +60,7 @@ def stop(signal, frame):
     global TornadoLoop
     log.info('CTRL-C recieved, stopping')
     TornadoLoop.stop()
+    mqtt.disconnect()
 
 
 def main():

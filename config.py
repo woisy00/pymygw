@@ -3,6 +3,7 @@
 '''
 DEBUG = True
 LogFile = 'pymygw.log'
+Publish = 'mqtt'
 
 '''
     Web Config
@@ -17,6 +18,14 @@ OpenhabAPI = 'http://adugw.home:8080/rest/items'
 OpenhabAPIList = 'item'
 OpenhabCacheTimeout = 300
 
+'''
+    MQTT config
+'''
+MQTTBroker = 'adugw.home'
+MQTTPort = 1883
+#https://github.com/jpmens/mqttwarn/issues/95
+MQTTProtocol = 3
+MQTTTopic = 'pymygw'
 
 '''
     Arduino Serial config
