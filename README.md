@@ -64,6 +64,7 @@ MQTTTopic = 'pymygw'
 
 ### Webinterface
 **only available if the Openhab Rest Api is used as the publisher**
+
 The gateway offers a simple Webinterface on Port 5000 to "glue" sensors to openhab items.
 
 Edit config.py to change the port
