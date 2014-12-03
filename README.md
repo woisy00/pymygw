@@ -1,7 +1,10 @@
 pymygw
 ======
 
-a [mysensors](http://www.mysensors.org/) to openhab gw based on https://github.com/wbcode/ham 
+a [mysensors](http://www.mysensors.org/) gw based on https://github.com/wbcode/ham
+
+- MQTT Support
+- Openhab Rest Api Support
 
 **MySensors Serial Protocol (1.4) support only**
 
@@ -32,9 +35,24 @@ a [mysensors](http://www.mysensors.org/) to openhab gw based on https://github.c
 
 config.py
 ```python
-OpenhabAPI = 'http://adugw.home:8080/rest/items'
+# MQTT/Openhab
+Publisher = 'MQTT'
 
-SerialPort = '/dev/ttyACM0'
+'''
+Openhab config
+'''
+OpenhabAPI = 'http://adugw.home:8080/rest/items'
+OpenhabAPIList = 'item'
+OpenhabCacheTimeout = 300
+
+'''
+MQTT config
+'''
+MQTTBroker = 'adugw.home'
+MQTTPort = 1883
+#https://github.com/jpmens/mqttwarn/issues/95
+MQTTProtocol = 3
+MQTTTopic = 'pymygw'
 
 ```
 
@@ -45,6 +63,7 @@ SerialPort = '/dev/ttyACM0'
 ```
 
 ### Webinterface
+**only available if the Openhab Rest Api is used as the publisher**
 The gateway offers a simple Webinterface on Port 5000 to "glue" sensors to openhab items.
 
 Edit config.py to change the port
