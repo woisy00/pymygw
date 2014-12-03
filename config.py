@@ -3,10 +3,12 @@
 '''
 DEBUG = True
 LogFile = 'pymygw.log'
-Publish = 'mqtt'
+# MQTT/Openhab
+Publisher = 'MQTT'
 
 '''
     Web Config
+    only available if the OpenhabAPI is used
 '''
 WebPort = 5000
 WebDir = 'web'

@@ -16,11 +16,17 @@ class MQTT(object):
         self._log.info('MQTT Client connected to Broker {0}'.format(config.MQTTBroker))
 
     def publish(self, node, child, value):
-        self._PublishClient.publish('/{0}/{1}/{2}'.format(config.MQTTTopic, node, child), value)
-        self._log.debug('MQTT Publish: /{0}/{1}/{2}, value: {3}'.format(config.MQTTTopic,
-                                                                        node,
-                                                                        child,
-                                                                        value))
+        returncode, msgid = self._PublishClient.publish('/{0}/{1}/{2}'.format(config.MQTTTopic, node, child), value)
+        if returncode == 0:
+            self._log.info('MQTT Publish successfully: /{0}/{1}/{2}, value: {3}'.format(config.MQTTTopic,
+                                                                                        node,
+                                                                                        child,
+                                                                                        value))
+        else:
+            self._log.error('MQTT Publish failed: /{0}/{1}/{2}, value: {3}'.format(config.MQTTTopic,
+                                                                                   node,
+                                                                                   child,
+                                                                                   value))
 
     def disconnect(self):
         self._PublishClient.disconnect()

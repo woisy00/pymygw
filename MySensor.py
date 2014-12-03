@@ -101,11 +101,10 @@ class MySensorSetReq(MySensor):
     '''
         MySensor Set and Request Mapping Object
     '''
-    def __init__(self, openhab, mqtt):
+    def __init__(self, publisher):
         self._dict = config.MySensorSetReq
         MySensor.__init__(self)
-        self._openhab = openhab
-        self._mqtt = mqtt
+        self._publisher = publisher
 
     def process(self):
         self._log.debug('Processing Set/Req Message')
@@ -126,17 +125,16 @@ class MySensorSetReq(MySensor):
                              typ=self.name(self._message['subtype']))
             if a is None:
                 self._log.error('Add Node Failed: {0}'.format(self._message))
-        elif config.Publish == 'mqtt':
+        elif config.Publisher == 'MQTT':
             self._log.debug('Try to publish values to the MQTT Brocker on {0}: {1}'.format(config.MQTTBroker,
                                                                                            self._message))
-            self._mqtt.publish(self._message['nodeid'],
-                               self._message['childid'],
-                               self._message['payload'])
+            self._publisher.publish(self._message['nodeid'],
+                                    self._message['childid'],
+                                    self._message['payload'])
 
-        #push new value to openhab
-        elif c['openhab'] is not None:
+        elif config.Publisher == 'Openhab' and  c['openhab'] is not None:
             self._log.debug('Try to push value to openhab: {0}'.format(self._message))
-            r = self._openhab.Set(c['openhab'], value=self._message['payload'])
+            r = self._publisher.Set(c['openhab'], value=self._message['payload'])
             if r:
                 self._log.info('Openhab updated successfully:\n\
                                 Node: {0},\n\

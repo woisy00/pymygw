@@ -1,6 +1,7 @@
 from tornado.ioloop import IOLoop
 from tornado.web import Application, StaticFileHandler
 from threading import Thread
+from sys import exit
 import os
 import signal
 import logging
@@ -10,7 +11,6 @@ import config
 import Gateway
 import OpenHab
 import MQTT
-import Webinterface
 
 
 '''
@@ -30,26 +30,41 @@ else:
 
 
 #db = Database.Database()
-openhab = OpenHab.Openhab()
-mqtt = MQTT.MQTT()
-TornadoLoop = None
-Web = Application([
-    (r'/do', Webinterface.CommandHandler, dict(openhab=openhab)),
-    (r'/static/(.*)', StaticFileHandler, {'path': os.path.join(config.WebDir, 'static')}),
-    (r'/', Webinterface.IndexHandler, dict(openhab=openhab)),
-])
-logging.getLogger("tornado.access").addHandler(handler)
-logging.getLogger("tornado.access").propagate = False
-logging.getLogger("tornado.application").addHandler(handler)
-logging.getLogger("tornado.application").propagate = False
-logging.getLogger("tornado.general").addHandler(handler)
-logging.getLogger("tornado.general").propagate = False
+if config.Publisher == 'MQTT':
+    publisher = MQTT.MQTT()
+elif config.Publisher == 'Openhab':
+    publisher = OpenHab.Openhab()
+
+    '''
+        we only need the webinterface if we use the openhab rest api
+    '''
+    import Webinterface
+    TornadoLoop = None
+    Web = Application([
+        (r'/do', Webinterface.CommandHandler, dict(openhab=publisher)),
+        (r'/static/(.*)', StaticFileHandler, {'path': os.path.join(config.WebDir, 'static')}),
+        (r'/', Webinterface.IndexHandler, dict(openhab=publisher)),
+    ])
+    logging.getLogger("tornado.access").addHandler(handler)
+    logging.getLogger("tornado.access").propagate = False
+    logging.getLogger("tornado.application").addHandler(handler)
+    logging.getLogger("tornado.application").propagate = False
+    logging.getLogger("tornado.general").addHandler(handler)
+    logging.getLogger("tornado.general").propagate = False
+
+
+else:
+    log.error('Unknown Publisher {0}'.format(config.Publisher))
+    exit(1)
+
+#openhab = OpenHab.Openhab()
+#mqtt = MQTT.MQTT()
 
 
 class SerialThread(Thread):
     def __init__(self):
         Thread.__init__(self)
-        self.gw = Gateway.Gateway(openhab, mqtt)
+        self.gw = Gateway.Gateway(publisher)
 
     def run(self):
         while True:
@@ -59,8 +74,11 @@ class SerialThread(Thread):
 def stop(signal, frame):
     global TornadoLoop
     log.info('CTRL-C recieved, stopping')
+    try:
+        publisher.disconnect()
+    except:
+        pass
     TornadoLoop.stop()
-    mqtt.disconnect()
 
 
 def main():
@@ -68,7 +86,8 @@ def main():
     serialGW = SerialThread()
     serialGW.daemon = True
     serialGW.start()
-    Web.listen(config.WebPort)
+    if config.Publisher == 'Openhab':
+        Web.listen(config.WebPort)
     TornadoLoop = IOLoop.instance()
     TornadoLoop.start()
 
