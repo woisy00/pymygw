@@ -11,7 +11,15 @@ class MQTT(object):
 
     def __client(self):
         self._PublishClient = mqtt.Client(client_id='pymygw-serialgw', protocol=config.MQTTProtocol)
-        self._PublishClient.connect(config.MQTTBroker, port=config.MQTTPort)
+        if config.MQTTTLS:
+            self._PublishClient.tls_set(config.MQTTCa,
+                                        certfile=config.MQTTCert,
+                                        keyfile=config.MQTTKey)
+            #enable for testing only
+            #self._PublishClient.tls_insecure_set(True)
+            self._PublishClient.connect(config.MQTTBroker,  port=config.MQTTTLSPort)
+        else:
+            self._PublishClient.connect(config.MQTTBroker, port=config.MQTTPort)
         self._PublishClient.loop_start()
         self._log.info('MQTT Client connected to Broker {0}'.format(config.MQTTBroker))
 

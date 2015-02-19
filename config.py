@@ -22,12 +22,22 @@ OpenhabCacheTimeout = 300
 
 '''
     MQTT config
+
+
+    TLS Attention
+    !!!The broker dns name and the CN in the tls cert must be the same!!!
 '''
-MQTTBroker = 'adugw.home'
+
+MQTTBroker = 'mqtt.home'
+MQTTTLS = True
 MQTTPort = 1883
 #https://github.com/jpmens/mqttwarn/issues/95
 MQTTProtocol = 3
 MQTTTopic = 'pymygw'
+MQTTCert = 'pymygw.crt'
+MQTTKey = 'pymygw.key'
+MQTTCa = 'ca.crt'
+MQTTTLSPort = 8883
 
 '''
     Arduino Serial config
