@@ -1,0 +1,14 @@
+- change DB to sqlalchemy
+- split MQTT, Openhab Rest API
+- switch to flask
+- support more sensors
+- cleanup
+- more generic
+
+
+db queries
+- known node
+- new id
+- openhab id
+- comment
+- 

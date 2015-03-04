@@ -8,9 +8,8 @@ import logging
 import logging.handlers
 
 import config
-import Gateway
-import OpenHab
-import MQTT
+from pymygw.Gateway import Gateway
+
 
 
 '''
@@ -31,14 +30,13 @@ else:
 
 #db = Database.Database()
 if config.Publisher == 'MQTT':
-    publisher = MQTT.MQTT()
+    from pymygw.MQTT import MQTT
+    publisher = MQTT()
 elif config.Publisher == 'Openhab':
-    publisher = OpenHab.Openhab()
+    from pymygw.OpenHab import Openhab
+    from pymygw import Webinterface
+    publisher = Openhab()
 
-    '''
-        we only need the webinterface if we use the openhab rest api
-    '''
-    import Webinterface
     TornadoLoop = None
     Web = Application([
         (r'/do', Webinterface.CommandHandler, dict(openhab=publisher)),
@@ -57,14 +55,11 @@ else:
     log.error('Unknown Publisher {0}'.format(config.Publisher))
     exit(1)
 
-#openhab = OpenHab.Openhab()
-#mqtt = MQTT.MQTT()
-
 
 class SerialThread(Thread):
     def __init__(self):
         Thread.__init__(self)
-        self.gw = Gateway.Gateway(publisher)
+        self.gw = Gateway(publisher)
 
     def run(self):
         while True:
