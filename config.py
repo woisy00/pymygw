@@ -42,7 +42,7 @@ MQTTTLSPort = 8883
 '''
     Arduino Serial config
 '''
-SerialPort = '/dev/ttyACM0'
+SerialPort = '/dev/ttyACM1'
 SerialBaud = 115200
 SerialTimeOut = 5
 

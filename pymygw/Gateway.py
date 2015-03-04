@@ -14,7 +14,7 @@ class Gateway(object):
         self._template = config.MySensorStructureTemplate
         self._log = logging.getLogger('pymygw')
         self._db = Database.Database()
-        self._db.initNodes()
+        #self._db.initNodes()
         self._dbresult = None
 
         '''
