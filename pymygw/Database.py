@@ -67,7 +67,7 @@ class Database():
                 self._log.debug('New node added to DB with ID: {0}'.format(newid))
                 return newid
             else:
-                self._log.error('Adding new Node failed with ID: {0}'.format(newid))
+                self._log.error('Adding new Node with ID: {0} failed'.format(newid))
                 return None
 
         else:

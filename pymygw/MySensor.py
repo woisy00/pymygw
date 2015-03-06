@@ -50,7 +50,7 @@ class MySensor():
         self.__searchRequest()
         return self._answer
 
-    def message(self, m, db):
+    def message(self, m):
         self._cmd = None
         self._message = m
         self._db = Database.Database()
@@ -129,7 +129,7 @@ class MySensorSetReq(MySensor):
             self._log.debug('Trying to add {0} to DB'.format(self._message))
             r = self._db.add(node=self._message['nodeid'],
                              sensor=self._message['childid'],
-                             sensortype=self.name(self._message['subtype']))
+                             sensortype=self._message['subtype'])
             if not r:
                 self._log.error('Add Node Failed: {0}'.format(self._message))
         elif config.Publisher == 'MQTT':

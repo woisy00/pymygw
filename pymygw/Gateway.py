@@ -4,7 +4,7 @@ import logging
 
 import config
 import MySensor
-import Database
+#import Database
 
 
 class Gateway(object):
@@ -13,7 +13,7 @@ class Gateway(object):
         self._maxChilds = config.MaxChilds
         self._template = config.MySensorStructureTemplate
         self._log = logging.getLogger('pymygw')
-        self._db = Database.Database()
+        #self._db = Database.Database()
         #self._db.initNodes()
         self._dbresult = None
 
@@ -57,7 +57,7 @@ class Gateway(object):
         return None
 
     def stop(self):
-        self._db.disconnect()
+        #self._db.disconnect()
         self.__disconnectSerial()
 
     def __parseIncoming(self):
@@ -102,7 +102,7 @@ class Gateway(object):
                 self._log.debug('Skipping Node {0} Message: gw node'.format(n))
                 return None
 
-            self._cmd = self._processby.message(self._incoming, self._db)
+            self._cmd = self._processby.message(self._incoming)
             if self._cmd is not None:
                 self.__sendSerial()
 
