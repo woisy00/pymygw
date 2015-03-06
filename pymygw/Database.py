@@ -67,7 +67,7 @@ class Database():
                 self._log.debug('New node added to DB with ID: {0}'.format(newid))
                 return newid
             else:
-                self._log.error('Adding new Node failed with ID: {0}'.format(newid)
+                self._log.error('Adding new Node failed with ID: {0}'.format(newid))
                 return None
 
         else:
@@ -118,6 +118,7 @@ class Database():
                                          Sensor: {1}'.format(self_result.node_id,
                                                              self._result.sensor_id))
                         return False
+
                 self._log.debug('Nothing to update for \
                                  Node: {0} \
                                  Sensor: {1}'.format(self_result.node_id,
@@ -134,8 +135,16 @@ class Database():
                                        openhab=openhab,
                                        comment=comment)
                     self._dbsession.add(newsensor)
-                    self._dbsession.commit()
-                    return "Sensor added"
+                    if self.__commit():
+                        self._log.info('Sensor {0} added \
+                                        on Node {1}'.format(self._result.node_id,
+                                        self._result.sensor_id))
+                        return True
+                    else:
+                        self._log.error('Adding Sensor {0} on \
+                                         Node {1} failed'.format(self._result.sensor_id,
+                                                                 self._result.node_id))
+                        return False
             return False
 
     def get(self, node=False, sensor=0):
