@@ -115,24 +115,13 @@ class MySensorSetReq(MySensor):
         self._log.debug('Message in set: {0}'.format(self._message))
         if not self._db.isknown(node=self._message['nodeid'],
                                 sensor=self._message['childid']):
-            '''
-                node + sensor is unknown
-                check if node is known
-            '''
-            if not self._db.isknown(node=self._message['nodeid']):
-                '''
-                    if it ends here, something is wrong..
-                    IDRequest should handle it before
-                '''
-                pass
-                self._log.error('Node is unknown (should never happen): {0}'.format(self._message))
             self._log.debug('Trying to add {0} to DB'.format(self._message))
             r = self._db.add(node=self._message['nodeid'],
                              sensor=self._message['childid'],
-                             sensortype=self._message['subtype'])
+                             sensortype=self.name(self._message['subtype']))
             if not r:
                 self._log.error('Add Node Failed: {0}'.format(self._message))
-        elif config.Publisher == 'MQTT':
+        if config.Publisher == 'MQTT':
             self._log.debug('Try to publish values to the MQTT Brocker on {0}: {1}'.format(config.MQTTBroker,
                                                                                            self._message))
             self._publisher.publish(self._message['nodeid'],
@@ -214,9 +203,9 @@ class MySensorInternal(MySensor):
             create new id for unknown nodes
             and send it as ID_RESPONSE
         '''
-        newID = self._db.add()
+        newID = self._db.newID()
         self._log.debug("new id {0}".format(newID))
-        if newID is not None:
+        if newID:
             self._cmd = {'nodeid': 255,
                          'childid': 255,
                          'messagetype': self._messagetype,

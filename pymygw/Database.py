@@ -37,7 +37,7 @@ class Database():
                                           .one()
         except NoResultFound:
             self._log.debug('No DB entry found for Node: {0} Sensor; {1}'.format(n, s))
-            pass
+
     def __commit(self):
         try:
             self._dbsession.commit()
@@ -49,103 +49,126 @@ class Database():
             self._dbsession.rollback()
             return False
 
-    def add(self, node=False, sensor=0, sensortype=None, openhab=None, comment=None):
+    def __update(self):
         '''
-            if node is not set -> new sensor node
-            - get new id, add(block) it, return it
+            updates the db entrie if needed
         '''
-        if not node:
-            lastid = self._dbsession.query(Sensor.node_id).order_by(Sensor.node_id.desc()).first()
-            self._log.debug('Last DB ID: '.format(lastid))
-            if lastid is None:
-                newid = 1
-            else:
-                newid = lastid[0] + 1
-            newnode = Sensor(node_id=newid)
-            self._dbsession.add(newnode)
-            if self.__commit():
-                self._log.debug('New node added to DB with ID: {0}'.format(newid))
-                return newid
-            else:
-                self._log.error('Adding new Node with ID: {0} failed'.format(newid))
-                return None
+        self._changed = False
+        if sensortype and sensortype != self._result.sensor_type:
+            self._log.error('SensorType mismatch \
+                                Node: {0} \
+                                Sensor: {1} \
+                                Type in DB: {2} \
+                                Reported Type: {3}'.format(self._result.node_id,
+                                                        self._result.sensor_id,
+                                                        self._result.sensor_type,
+                                                        sensortype))
 
-        else:
-            self.__getsingle(node, sensor)
-            if self._result:
-                '''
-                    node with sensor is known
-                '''
-                self._result.sensor_id = sensor
-                self._changed = False
-                if sensortype and sensortype != self._result.sensor_type:
-                    #self._changed = True
-                    #self._result.sensor_type = sensortype
-                    self._log.error('SensorType mismatch \
-                                     Node: {0} \
-                                     Sensor: {1} \
-                                     Type in DB: {2} \
-                                     Reported Type: {3}'.format(self._result.node_id,
-                                                                self._result.sensor_id,
-                                                                self._result.sensor_type,
-                                                                sensortype))
-
-                    return False
-                if openhab and openhab != self._result.openhab:
-                    self._log.debug('OpenhabDB entry update \
-                                     Node: {0} \
-                                     Sensor: {1} \
-                                     Openhab in DB: {2} \
-                                     New Openhab: {3}'.format(self._result.node_id,
-                                                              self._result.sensor_id,
-                                                              self._result.openhab,
-                                                              openhab))
-                    self._changed = True
-                    self._result.openhab = openhab
-                if comment and comment != self._result.comment:
-                    self._changed = True
-                    self._result.comment = comment
-                if self._changed:
-                    if self.__commit():
-                        self._log.debug('Update for Node: {0} \
-                                         Sensor: {1} \
-                                         finished successfully'.format(self._result.node_id,
-                                                                       self._result.sensor_id))
-                        return True
-                    else:
-                        self._log.error('Updated failed for \
-                                         Node: {0} \
-                                         Sensor: {1}'.format(self_result.node_id,
-                                                             self._result.sensor_id))
-                        return False
-
-                self._log.debug('Nothing to update for \
-                                 Node: {0} \
-                                 Sensor: {1}'.format(self_result.node_id,
-                                                     self._result.sensor_id))
-                return False
-            else:
-                if self.isknown(node=node):
-                    '''
-                        node is known, but new sensor
-                    '''
-                    newsensor = Sensor(node_id=node,
-                                       sensor_id=sensor,
-                                       sensor_type=sensortype,
-                                       openhab=openhab,
-                                       comment=comment)
-                    self._dbsession.add(newsensor)
-                    if self.__commit():
-                        self._log.info('Sensor {0} added \
-                                        on Node {1}'.format(self._result.node_id,
-                                        self._result.sensor_id))
-                        return True
-                    else:
-                        self._log.error('Adding Sensor {0} on \
-                                         Node {1} failed'.format(self._result.sensor_id,
-                                                                 self._result.node_id))
-                        return False
             return False
+        if openhab and openhab != self._result.openhab:
+            self._log.debug('OpenhabDB entry update \
+                                Node: {0} \
+                                Sensor: {1} \
+                                Openhab in DB: {2} \
+                                New Openhab: {3}'.format(self._result.node_id,
+                                                        self._result.sensor_id,
+                                                        self._result.openhab,
+                                                        openhab))
+            self._changed = True
+            self._result.openhab = openhab
+        if comment and comment != self._result.comment:
+            self._changed = True
+            self._result.comment = comment
+        if self._changed:
+            if self.__commit():
+                self._log.debug('Update for Node: {0} \
+                                    Sensor: {1} \
+                                    finished successfully'.format(self._result.node_id,
+                                                                self._result.sensor_id))
+                return True
+            else:
+                self._log.error('Updated failed for \
+                                    Node: {0} \
+                                    Sensor: {1}'.format(self_result.node_id,
+                                                        self._result.sensor_id))
+                return False
+
+        self._log.debug('Nothing to update for \
+                            Node: {0} \
+                            Sensor: {1}'.format(self_result.node_id,
+                                                self._result.sensor_id))
+        return False
+
+
+
+    def newID(self):
+        '''
+            New sensor node,
+            generate new node id and return it
+        '''
+        lastid = self._dbsession.query(Sensor.node_id).order_by(Sensor.node_id.desc()).first()
+        self._log.debug('Last DB ID: '.format(lastid))
+        if lastid is None:
+            newid = 1
+        else:
+            newid = lastid[0] + 1
+        newnode = Sensor(node_id=newid,
+                         sensor_id=sensor)
+        self._dbsession.add(newnode)
+        if self.__commit():
+            self._log.debug('New node added to DB with ID: {0}, \
+                             Sensor ID: {1}'.format(newid, sensor))
+            return newid
+        else:
+            self._log.error('Adding new Node with ID: {0}, \
+                             Sensor ID: {1} failed'.format(newid, sensor))
+            return False
+
+
+
+    def add(self, node=False, sensor=0, sensortype=None, openhab=None, comment=None):
+        if not node:
+            return False
+        self.__getsingle(node, sensor)
+        if self._result:
+            '''
+                Node + Sensor is known
+                update entry
+            '''
+            self.__update()
+        else:
+            '''
+                Node + Sensor is unknown
+                create new DB entrie
+            '''
+            if self.isknown(node=node):
+                '''
+                    node is known, but new sensor
+                '''
+                nid = self._node
+            else:
+                '''
+                    Node is unknown (old Sensor)
+                '''
+                nid = node
+            newsensor = Sensor(node_id=nid,
+                                sensor_id=sensor,
+                                sensor_type=sensortype,
+                                openhab=openhab,
+                                comment=comment)
+            self._dbsession.add(newsensor)
+            self._log.info('adding new sensor')
+            if self.__commit():
+                self._log.info('Sensor {0} added \
+                                on Node {1}'.format(sensor,
+                                                    nid))
+                return True
+            else:
+                self._log.error('Adding Sensor {0} on \
+                                    Node {1} failed'.format(sensor,
+                                                            nid))
+                return False
+        return False
 
     def get(self, node=False, sensor=0):
         self.__getsingle(node, sensor)
