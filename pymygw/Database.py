@@ -55,7 +55,7 @@ class Database():
             self._log.debug('Commit successfull: {0}'.format(self._result))
             return True
         except Exception, e:
-            self._log.error('Commit failed for {0} \
+            self._log.error('Commit failed for {0} \n\
                              Exception: {1}'.format(self._result, e))
             self._dbsession.rollback()
             return False
@@ -73,25 +73,15 @@ class Database():
             '''
             self._changed = False
             if sensortype and sensortype != self._result.sensor_type:
-                self._log.error('SensorType mismatch \
-                                    Node: {0} \
-                                    Sensor: {1} \
-                                    Type in DB: {2} \
-                                    Reported Type: {3}'.format(self._result.node_id,
-                                                            self._result.sensor_id,
-                                                            self._result.sensor_type,
+                self._log.error('SensorType mismatch for {0} \n\
+                                 Reported Type: {3}'.format(self._result,
                                                             sensortype))
 
                 return False
             if openhab and openhab != self._result.openhab:
-                self._log.debug('OpenhabDB entry update \
-                                    Node: {0} \
-                                    Sensor: {1} \
-                                    Openhab in DB: {2} \
-                                    New Openhab: {3}'.format(self._result.node_id,
-                                                            self._result.sensor_id,
-                                                            self._result.openhab,
-                                                            openhab))
+                self._log.debug('OpenhabDB entry update for {0} \n\
+                                 New Openhab: {3}'.format(self._result,
+                                                          openhab))
                 self._changed = True
                 self._result.openhab = openhab
             if comment and comment != self._result.comment:
@@ -99,22 +89,14 @@ class Database():
                 self._result.comment = comment
             if self._changed:
                 if self.__commit():
-                    self._log.debug('Update for Node: {0} \
-                                        Sensor: {1} \
-                                        finished successfully'.format(self._result.node_id,
-                                                                    self._result.sensor_id))
+                    self._log.debug('Update for {0} \
+                                     finished successfully'.format(self._result))
                     return True
                 else:
-                    self._log.error('Updated failed for \
-                                        Node: {0} \
-                                        Sensor: {1}'.format(self_result.node_id,
-                                                            self._result.sensor_id))
+                    self._log.error('Updated failed for {0}'.format(self._result))
                     return False
 
-            self._log.debug('Nothing to update for \
-                                Node: {0} \
-                                Sensor: {1}'.format(self_result.node_id,
-                                                    self._result.sensor_id))
+            self._log.debug('Nothing to update for {0}'.format(self._result))
             return False
 
 
@@ -135,12 +117,10 @@ class Database():
                          last_seen=time.time())
         self._dbsession.add(newnode)
         if self.__commit():
-            self._log.debug('New node added to DB with ID: {0}, \
-                             Sensor ID: {1}'.format(newid, sensor))
+            self._log.debug('New node added to DB: {0}'.format(newnode))
             return newid
         else:
-            self._log.error('Adding new Node with ID: {0}, \
-                             Sensor ID: {1} failed'.format(newid, sensor))
+            self._log.error('Adding node failed: {0}'.format(newode))
             return False
 
 
@@ -185,8 +165,8 @@ class Database():
                 return True
             else:
                 self._log.error('Adding Sensor {0} on \
-                                    Node {1} failed'.format(sensor,
-                                                            nid))
+                                 Node {1} failed'.format(sensor,
+                                                         nid))
                 return False
         return False
 
