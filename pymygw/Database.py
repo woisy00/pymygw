@@ -2,6 +2,8 @@ from sqlalchemy import create_engine, Column, Integer, String, UniqueConstraint
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker, scoped_session
 from sqlalchemy.orm.exc import NoResultFound
+import time
+import json
 from logging import getLogger
 Base = declarative_base()
 
@@ -16,6 +18,15 @@ class Sensor(Base):
     last_seen = Column(Integer, default=0)
 
     __table_args__ = (UniqueConstraint('node_id', 'sensor_id'),)
+
+
+    def __str__(self):
+        return json.dumps({'Node': self.node_id,
+                           'Sensor': self.sensor_id,
+                           'Type': self.sensor_type,
+                           'Openhab': self.openhab,
+                           'Comment': self.comment,
+                           'Last Seen': self.last_seen})
 
 
 class Database():
@@ -49,55 +60,62 @@ class Database():
             self._dbsession.rollback()
             return False
 
-    def __update(self):
-        '''
-            updates the db entrie if needed
-        '''
-        self._changed = False
-        if sensortype and sensortype != self._result.sensor_type:
-            self._log.error('SensorType mismatch \
-                                Node: {0} \
-                                Sensor: {1} \
-                                Type in DB: {2} \
-                                Reported Type: {3}'.format(self._result.node_id,
-                                                        self._result.sensor_id,
-                                                        self._result.sensor_type,
-                                                        sensortype))
-
-            return False
-        if openhab and openhab != self._result.openhab:
-            self._log.debug('OpenhabDB entry update \
-                                Node: {0} \
-                                Sensor: {1} \
-                                Openhab in DB: {2} \
-                                New Openhab: {3}'.format(self._result.node_id,
-                                                        self._result.sensor_id,
-                                                        self._result.openhab,
-                                                        openhab))
-            self._changed = True
-            self._result.openhab = openhab
-        if comment and comment != self._result.comment:
-            self._changed = True
-            self._result.comment = comment
-        if self._changed:
+    def __update(self, timestamp=False):
+        if timestamp:
+            self._result.last_seen = time.time()
             if self.__commit():
-                self._log.debug('Update for Node: {0} \
-                                    Sensor: {1} \
-                                    finished successfully'.format(self._result.node_id,
-                                                                self._result.sensor_id))
                 return True
-            else:
-                self._log.error('Updated failed for \
-                                    Node: {0} \
-                                    Sensor: {1}'.format(self_result.node_id,
-                                                        self._result.sensor_id))
-                return False
+            return False
 
-        self._log.debug('Nothing to update for \
-                            Node: {0} \
-                            Sensor: {1}'.format(self_result.node_id,
-                                                self._result.sensor_id))
-        return False
+        else:
+            '''
+                updates the db entrie if needed
+            '''
+            self._changed = False
+            if sensortype and sensortype != self._result.sensor_type:
+                self._log.error('SensorType mismatch \
+                                    Node: {0} \
+                                    Sensor: {1} \
+                                    Type in DB: {2} \
+                                    Reported Type: {3}'.format(self._result.node_id,
+                                                            self._result.sensor_id,
+                                                            self._result.sensor_type,
+                                                            sensortype))
+
+                return False
+            if openhab and openhab != self._result.openhab:
+                self._log.debug('OpenhabDB entry update \
+                                    Node: {0} \
+                                    Sensor: {1} \
+                                    Openhab in DB: {2} \
+                                    New Openhab: {3}'.format(self._result.node_id,
+                                                            self._result.sensor_id,
+                                                            self._result.openhab,
+                                                            openhab))
+                self._changed = True
+                self._result.openhab = openhab
+            if comment and comment != self._result.comment:
+                self._changed = True
+                self._result.comment = comment
+            if self._changed:
+                if self.__commit():
+                    self._log.debug('Update for Node: {0} \
+                                        Sensor: {1} \
+                                        finished successfully'.format(self._result.node_id,
+                                                                    self._result.sensor_id))
+                    return True
+                else:
+                    self._log.error('Updated failed for \
+                                        Node: {0} \
+                                        Sensor: {1}'.format(self_result.node_id,
+                                                            self._result.sensor_id))
+                    return False
+
+            self._log.debug('Nothing to update for \
+                                Node: {0} \
+                                Sensor: {1}'.format(self_result.node_id,
+                                                    self._result.sensor_id))
+            return False
 
 
 
@@ -113,7 +131,8 @@ class Database():
         else:
             newid = lastid[0] + 1
         newnode = Sensor(node_id=newid,
-                         sensor_id=sensor)
+                         sensor_id=sensor,
+                         last_seen=time.time())
         self._dbsession.add(newnode)
         if self.__commit():
             self._log.debug('New node added to DB with ID: {0}, \
@@ -155,7 +174,8 @@ class Database():
                                 sensor_id=sensor,
                                 sensor_type=sensortype,
                                 openhab=openhab,
-                                comment=comment)
+                                comment=comment,
+                                last_seen=time.time())
             self._dbsession.add(newsensor)
             self._log.info('adding new sensor')
             if self.__commit():
@@ -176,6 +196,8 @@ class Database():
 
     def isknown(self, node=False, sensor=0):
         self.__getsingle(node, sensor)
+        if self._result:
+            self.__update(timestamp=True)
         return bool(self._result)
 
     def openhab(self, node=False, sensor=0):

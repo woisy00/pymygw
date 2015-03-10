@@ -4,7 +4,6 @@ import logging
 
 import config
 import MySensor
-#import Database
 
 
 class Gateway(object):
@@ -13,8 +12,6 @@ class Gateway(object):
         self._maxChilds = config.MaxChilds
         self._template = config.MySensorStructureTemplate
         self._log = logging.getLogger('pymygw')
-        #self._db = Database.Database()
-        #self._db.initNodes()
         self._dbresult = None
 
         '''
@@ -57,7 +54,6 @@ class Gateway(object):
         return None
 
     def stop(self):
-        #self._db.disconnect()
         self.__disconnectSerial()
 
     def __parseIncoming(self):
