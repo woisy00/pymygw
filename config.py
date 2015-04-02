@@ -7,6 +7,38 @@ LogFile = 'pymygw.log'
 Publisher = 'MQTT'
 
 '''
+    Arduino Serial config
+'''
+SerialPort = '/dev/ttyACM0'
+SerialBaud = 115200
+SerialTimeOut = 1
+
+'''
+    MySensor generic config
+'''
+Seperator = ';'
+UnitSystem = 'M'
+EOL = '\n'
+
+'''
+    MQTT config
+
+
+    TLS Attention
+    !!!The broker dns name and the CN in the tls cert must be the same!!!
+'''
+MQTTBroker = 'mqtt.home'
+MQTTTLS = True
+MQTTPort = 1883
+#https://github.com/jpmens/mqttwarn/issues/95
+MQTTProtocol = 3
+MQTTTopic = 'pymygw'
+MQTTCert = 'pymygw.crt'
+MQTTKey = 'pymygw.key'
+MQTTCa = 'ca.crt'
+MQTTTLSPort = 8883
+
+'''
     Web Config
     only available if the OpenhabAPI is used
 '''
@@ -20,56 +52,14 @@ OpenhabAPI = 'http://adugw.home:8080/rest/items'
 OpenhabAPIList = 'item'
 OpenhabCacheTimeout = 300
 
-'''
-    MQTT config
-
-
-    TLS Attention
-    !!!The broker dns name and the CN in the tls cert must be the same!!!
-'''
-
-MQTTBroker = 'mqtt.home'
-MQTTTLS = True
-MQTTPort = 1883
-#https://github.com/jpmens/mqttwarn/issues/95
-MQTTProtocol = 3
-MQTTTopic = 'pymygw'
-MQTTCert = 'pymygw.crt'
-MQTTKey = 'pymygw.key'
-MQTTCa = 'ca.crt'
-MQTTTLSPort = 8883
-
-'''
-    Arduino Serial config
-'''
-SerialPort = '/dev/ttyACM1'
-SerialBaud = 115200
-SerialTimeOut = 5
-
-
-'''
-    MySensor generic config
-'''
-Seperator = ';'
-MaxNodes = 254
-MaxChilds = 254
-EOL = '\n'
-'''
-    units are metric
-'''
-UnitSystem = 'M'
-
 
 '''
     Database
 '''
-Database = '.pymygw.db'
-DatabaseTable = 'sensors'
-DatabaseTableCreate = 'CREATE TABLE IF NOT EXISTS {0} (id TEXT UNIQUE, typ TEXT, openhab TEXT UNIQUE)'.format(DatabaseTable)
-
+Database = 'sqlite:///pymygw.db'
 
 '''
-    MySensor Serial Protocol Definition v1.4 (Beta)
+    MySensor Serial Protocol Definition v1.4
     http://www.mysensors.org/build/serial_api
 
 '''

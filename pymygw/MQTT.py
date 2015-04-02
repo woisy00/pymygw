@@ -1,4 +1,5 @@
 import paho.mqtt.client as mqtt
+import sys
 import logging
 
 import config
@@ -17,11 +18,22 @@ class MQTT(object):
                                         keyfile=config.MQTTKey)
             #enable for testing only
             #self._PublishClient.tls_insecure_set(True)
-            self._PublishClient.connect(config.MQTTBroker,  port=config.MQTTTLSPort)
+            self.__connect(config.MQTTTLSPort)
         else:
-            self._PublishClient.connect(config.MQTTBroker, port=config.MQTTPort)
+            self.__connect(config.MQTTPort)
+
+    def __connect(self, p):
+        try:
+            self._PublishClient.connect(config.MQTTBroker,  port=p)
+        except Exception, e:
+            self._log.error('MQTT Client connection to Broker {0}, Port {1} failed. {2}'.format(config.MQTTBroker,
+                                                                                                p,
+                                                                                                e))
+            sys.exit(10)
         self._PublishClient.loop_start()
         self._log.info('MQTT Client connected to Broker {0}'.format(config.MQTTBroker))
+
+
 
     def publish(self, node, child, value):
         returncode, msgid = self._PublishClient.publish('/{0}/{1}/{2}'.format(config.MQTTTopic, node, child), value)

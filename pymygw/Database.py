@@ -5,6 +5,8 @@ from sqlalchemy.orm.exc import NoResultFound
 import time
 import json
 from logging import getLogger
+
+import config
 Base = declarative_base()
 
 class Sensor(Base):
@@ -32,7 +34,7 @@ class Sensor(Base):
 class Database():
     def __init__(self):
         self._log = getLogger('pymygw')
-        self._engine = create_engine('sqlite:///pymygw.db')
+        self._engine = create_engine(config.Database)
         Base.metadata.create_all(self._engine)
         Base.metadata.bind = self._engine
         self._dbsession = scoped_session(sessionmaker(bind=self._engine))

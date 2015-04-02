@@ -1,15 +1,13 @@
 from tornado.ioloop import IOLoop
-from tornado.web import Application, StaticFileHandler
-from threading import Thread
+from threading import Thread, Event
 from sys import exit
+import time
 import os
-import signal
 import logging
 import logging.handlers
 
 import config
 from pymygw.Gateway import Gateway
-
 
 
 '''
@@ -28,11 +26,11 @@ else:
     log.setLevel(logging.INFO)
 
 
-#db = Database.Database()
 if config.Publisher == 'MQTT':
     from pymygw.MQTT import MQTT
     publisher = MQTT()
 elif config.Publisher == 'Openhab':
+    from tornado.web import Application, StaticFileHandler
     from pymygw.OpenHab import Openhab
     from pymygw import Webinterface
     publisher = Openhab()
@@ -43,6 +41,9 @@ elif config.Publisher == 'Openhab':
         (r'/static/(.*)', StaticFileHandler, {'path': os.path.join(config.WebDir, 'static')}),
         (r'/', Webinterface.IndexHandler, dict(openhab=publisher)),
     ])
+
+    Web.listen(config.WebPort)
+
     logging.getLogger("tornado.access").addHandler(handler)
     logging.getLogger("tornado.access").propagate = False
     logging.getLogger("tornado.application").addHandler(handler)
@@ -56,36 +57,18 @@ else:
     exit(1)
 
 
-class SerialThread(Thread):
-    def __init__(self):
-        Thread.__init__(self)
-        self.gw = Gateway(publisher)
-
-    def run(self):
-        while True:
-            self.gw.loop()
-
-
-def stop(signal, frame):
-    global TornadoLoop
-    log.info('CTRL-C recieved, stopping')
-    try:
-        publisher.disconnect()
-    except:
-        pass
-    TornadoLoop.stop()
-
-
-def main():
-    global TornadoLoop
-    serialGW = SerialThread()
-    serialGW.daemon = True
-    serialGW.start()
-    if config.Publisher == 'Openhab':
-        Web.listen(config.WebPort)
-    TornadoLoop = IOLoop.instance()
-    TornadoLoop.start()
-
 if __name__ == "__main__":
-    signal.signal(signal.SIGINT, stop)
-    main()
+    serialGW = Gateway(publisher)
+    thread = Thread(target=serialGW.loop())
+    thread.daemon = True
+    try:
+        thread.start()
+    except KeyboardInterrupt, SystemExit:
+        print 'stopping'
+        try:
+            publisher.disconnect()
+            serialGW._run.clear()
+        except Exception, e:
+            print e
+
+
