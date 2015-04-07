@@ -1,4 +1,4 @@
-from sqlalchemy import create_engine, Column, Integer, String, UniqueConstraint
+from sqlalchemy import create_engine, Column, Integer, Float, String, UniqueConstraint
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker, scoped_session
 from sqlalchemy.orm.exc import NoResultFound
@@ -14,9 +14,14 @@ class Sensor(Base):
     id = Column(Integer, primary_key=True)
     node_id = Column(Integer, nullable=False)
     sensor_id = Column(Integer, default=0)
-    sensor_type = Column(Integer, default=None)
+    sensor_type = Column(String(20), default=None)
     openhab = Column(String(90), unique=True, nullable=True)
     comment = Column(String(255))
+    battery = Column(Integer, default=0)
+    battery_level = Column(Float, default=0)
+    api_version = Column(String(20), default=None)
+    sketch_name = Column(String(60), default=None)
+    sketch_version = Column(String(60), default=None)
     last_seen = Column(Integer, default=0)
 
     __table_args__ = (UniqueConstraint('node_id', 'sensor_id'),)
@@ -28,6 +33,11 @@ class Sensor(Base):
                            'Type': self.sensor_type,
                            'Openhab': self.openhab,
                            'Comment': self.comment,
+                           'Battery': self.battery,
+                           'Battery Level': self.battery_level,
+                           'API Version': self.api_version,
+                           'Sketch Version': self.sketch_version,
+                           'Sketch Name': self.sketch_name,
                            'Last Seen': self.last_seen})
 
 
@@ -74,25 +84,57 @@ class Database():
                 updates the db entrie if needed
             '''
             self._changed = False
-            if sensortype and sensortype != self._result.sensor_type:
+            if 'sensortype' in self._addargs and \
+                    self._addargs['sensortype'] != self._result.sensor_type:
                 self._log.error('SensorType mismatch for {0} \n\
                                  Reported Type: {3}'.format(self._result,
                                                             sensortype))
 
                 return False
-            if openhab and openhab != self._result.openhab:
+
+            if 'openhab' in self._addargs and \
+                    self._addargs['openhab'] != self._result.openhab:
                 self._log.debug('OpenhabDB entry update for {0} \n\
                                  New Openhab: {3}'.format(self._result,
                                                           openhab))
                 self._changed = True
                 self._result.openhab = openhab
-            if comment and comment != self._result.comment:
+
+            if 'comment' in self._addargs and \
+                    self._addargs['comment'] != self._result.comment:
                 self._changed = True
                 self._result.comment = comment
+
+            if 'battery' in self._addargs and \
+                    self._addargs['battery'] != self._result.battery:
+                self._changed = True
+                self._result.battery = self._addargs['battery']
+
+            if 'battery_level' in self._addargs and \
+                    self._addargs['battery_level'] != self._result.battery_level:
+                self._changed = True
+                self._result.battery_level = self._addargs['battery_level']
+
+            if 'api_version' in self._addargs and \
+                    self._addargs['api_version'] != self._result.api_version:
+                self._changed = True
+                self._result.api_version = self._addargs['api_version']
+
+            if 'sketch_version' in self._addargs and \
+                    self._addargs['sketch_version'] != self._result.sketch_version:
+                self._changed = True
+                self._result.sketch_version = self._addargs['sketch_version']
+
+            if 'sketch_name' in self._addargs and \
+                    self._addargs['sketch_name'] != self._result.sketch_name:
+                self._changed = True
+                self._result.sketch_name = self._addargs['sketch_name']
+
+
             if self._changed:
                 if self.__commit():
-                    self._log.debug('Update for {0} \
-                                     finished successfully'.format(self._result))
+                    self._log.debug('Update for {0} '
+                                    'finished successfully'.format(self._result))
                     return True
                 else:
                     self._log.error('Updated failed for {0}'.format(self._result))
@@ -108,7 +150,9 @@ class Database():
             New sensor node,
             generate new node id and return it
         '''
-        lastid = self._dbsession.query(Sensor.node_id).order_by(Sensor.node_id.desc()).first()
+        lastid = self._dbsession.query(Sensor.node_id)\
+                                .order_by(Sensor.node_id.desc())\
+                                .first()
         self._log.debug('Last DB ID: '.format(lastid))
         if lastid is None:
             newid = 1
@@ -127,7 +171,8 @@ class Database():
 
 
 
-    def add(self, node=False, sensor=0, sensortype=None, openhab=None, comment=None):
+    def add(self, node=False, sensor=0, sensortype=None, **kwargs):
+        self._addargs = kwargs
         if not node:
             return False
         self.__getsingle(node, sensor)
@@ -155,19 +200,17 @@ class Database():
             newsensor = Sensor(node_id=nid,
                                 sensor_id=sensor,
                                 sensor_type=sensortype,
-                                openhab=openhab,
-                                comment=comment,
                                 last_seen=time.time())
             self._dbsession.add(newsensor)
             self._log.info('adding new sensor')
             if self.__commit():
-                self._log.info('Sensor {0} added \
-                                on Node {1}'.format(sensor,
-                                                    nid))
+                self._log.info('Sensor {0} added on'
+                               'Node {1}'.format(sensor,
+                                                 nid))
                 return True
             else:
-                self._log.error('Adding Sensor {0} on \
-                                 Node {1} failed'.format(sensor,
+                self._log.error('Adding Sensor {0} on '
+                                'Node {1} failed'.format(sensor,
                                                          nid))
                 return False
         return False

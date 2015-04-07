@@ -113,14 +113,9 @@ class MySensorSetReq(MySensor):
 
     def __set(self):
         self._log.debug('Message in set: {0}'.format(self._message))
-        if not self._db.isknown(node=self._message['nodeid'],
-                                sensor=self._message['childid']):
-            self._log.debug('Trying to add {0} to DB'.format(self._message))
-            r = self._db.add(node=self._message['nodeid'],
-                             sensor=self._message['childid'],
-                             sensortype=self.name(self._message['subtype']))
-            if not r:
-                self._log.error('Add Node Failed: {0}'.format(self._message))
+        r = self._db.add(node=self._message['nodeid'],
+                         sensor=self._message['childid'],
+                         sensortype=self.name(self._message['subtype']))
         if config.Publisher == 'MQTT':
             self._log.debug('Try to publish values to the MQTT Brocker on {0}: {1}'.format(config.MQTTBroker,
                                                                                            self._message))
@@ -231,3 +226,5 @@ class MySensorInternal(MySensor):
                      'payload': int(time())}
 
 
+    def __Sketch_Name(self):
+        pass
