@@ -54,9 +54,6 @@ class Gateway(object):
         self.__disconnectSerial()
         return
 
-    def connected(self):
-        return self._serialIsConnected
-
     def __parseIncoming(self):
         '''
             Main Worker

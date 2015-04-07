@@ -64,7 +64,6 @@ def exithandler(signal, frame):
     sys.exit(0)
 
 if __name__ == "__main__":
-    #signal.signal(signal.SIGINT, exithandler)
     for sig in (signal.SIGINT, signal.SIGTERM):
         signal.signal(sig, exithandler)
     serialGW = Gateway(publisher)
