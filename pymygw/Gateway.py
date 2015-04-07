@@ -1,6 +1,5 @@
 import serial
 from time import sleep
-from threading import Event
 import logging
 
 import config
@@ -9,8 +8,6 @@ import MySensor
 
 class Gateway(object):
     def __init__(self, publisher):
-        self._run = Event()
-        self._run.set()
         self._MySensorStructureTemplate = config.MySensorStructureTemplate
         self._log = logging.getLogger('pymygw')
         self._dbresult = None
@@ -42,19 +39,23 @@ class Gateway(object):
         '''
             Main Loop
         '''
-        while self._run.is_set():
-            if self._serialIsConnected:
-                try:
-                    self.response = self._serialConnection.readline()
-                except:
-                    continue
-                if self.response:
-                    self.response = self.response.rstrip(config.EOL)
-                    self._log.info('incoming message: {0}'.format(self.response))
-                    self.__parseIncoming()
+        while self._serialIsConnected:
+            try:
+                self.response = self._serialConnection.readline()
+            except:
+                continue
+            if self.response:
+                self.response = self.response.rstrip(config.EOL)
+                self._log.info('incoming message: {0}'.format(self.response))
+                self.__parseIncoming()
 
     def stop(self):
+        self._log.info('stop recieved, shutting down')
         self.__disconnectSerial()
+        return
+
+    def connected(self):
+        return self._serialIsConnected
 
     def __parseIncoming(self):
         '''
@@ -150,6 +151,8 @@ class Gateway(object):
     def __disconnectSerial(self):
         if self._serialIsConnected:
             self._serialConnection.close()
+            self._log.info('serial connection closed')
+            self._serialIsConnected = False
 
     def __sendSerial(self):
         self.__prepareCommand()

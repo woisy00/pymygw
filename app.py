@@ -1,6 +1,7 @@
 from tornado.ioloop import IOLoop
-from threading import Thread, Event
-from sys import exit
+from threading import Thread
+import sys
+import signal
 import time
 import os
 import logging
@@ -54,21 +55,21 @@ elif config.Publisher == 'Openhab':
 
 else:
     log.error('Unknown Publisher {0}'.format(config.Publisher))
-    exit(1)
+    sys.exit(1)
 
+def exithandler(signal, frame):
+    print 'Ctrl-C.... Exiting'
+    serialGW.stop()
+    thread.join(1)
+    sys.exit(0)
 
 if __name__ == "__main__":
+    #signal.signal(signal.SIGINT, exithandler)
+    for sig in (signal.SIGINT, signal.SIGTERM):
+        signal.signal(sig, exithandler)
     serialGW = Gateway(publisher)
     thread = Thread(target=serialGW.loop())
     thread.daemon = True
-    try:
-        thread.start()
-    except KeyboardInterrupt, SystemExit:
-        print 'stopping'
-        try:
-            publisher.disconnect()
-            serialGW._run.clear()
-        except Exception, e:
-            print e
+    thread.start()
 
 
