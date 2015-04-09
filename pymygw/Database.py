@@ -72,64 +72,58 @@ class Database():
             self._dbsession.rollback()
             return False
 
-    def __update(self, timestamp=False):
-        if timestamp:
-            if self.__commit():
-                return True
+    def __update(self):
+        '''
+            updates the db entrie if needed
+        '''
+        self._result.last_seen = time.time()
+        if 'sensortype' in self._addargs and \
+                self._addargs['sensortype'] != self._result.sensor_type:
+            self._log.error('SensorType mismatch for {0} \n\
+                             Reported Type: {3}'.format(self._result,
+                                                        sensortype))
+
             return False
 
+        if 'openhab' in self._addargs and \
+                self._addargs['openhab'] != self._result.openhab:
+            self._log.debug('OpenhabDB entry update for {0} \n\
+                             New Openhab: {3}'.format(self._result,
+                                                      openhab))
+            self._result.openhab = openhab
+
+        if 'comment' in self._addargs and \
+                self._addargs['comment'] != self._result.comment:
+            self._result.comment = comment
+
+        if 'battery' in self._addargs and \
+                self._addargs['battery'] != self._result.battery:
+            self._result.battery = self._addargs['battery']
+
+        if 'battery_level' in self._addargs and \
+                self._addargs['battery_level'] != self._result.battery_level:
+            self._result.battery_level = self._addargs['battery_level']
+
+        if 'api_version' in self._addargs and \
+                self._addargs['api_version'] != self._result.api_version:
+            self._result.api_version = self._addargs['api_version']
+
+        if 'sketch_version' in self._addargs and \
+                self._addargs['sketch_version'] != self._result.sketch_version:
+            self._result.sketch_version = self._addargs['sketch_version']
+
+        if 'sketch_name' in self._addargs and \
+                self._addargs['sketch_name'] != self._result.sketch_name:
+            self._result.sketch_name = self._addargs['sketch_name']
+
+
+        if self.__commit():
+            self._log.debug('Update for {0} '
+                            'finished successfully'.format(self._result))
+            return True
         else:
-            '''
-                updates the db entrie if needed
-            '''
-            self._result.last_seen = time.time()
-            if 'sensortype' in self._addargs and \
-                    self._addargs['sensortype'] != self._result.sensor_type:
-                self._log.error('SensorType mismatch for {0} \n\
-                                 Reported Type: {3}'.format(self._result,
-                                                            sensortype))
-
-                return False
-
-            if 'openhab' in self._addargs and \
-                    self._addargs['openhab'] != self._result.openhab:
-                self._log.debug('OpenhabDB entry update for {0} \n\
-                                 New Openhab: {3}'.format(self._result,
-                                                          openhab))
-                self._result.openhab = openhab
-
-            if 'comment' in self._addargs and \
-                    self._addargs['comment'] != self._result.comment:
-                self._result.comment = comment
-
-            if 'battery' in self._addargs and \
-                    self._addargs['battery'] != self._result.battery:
-                self._result.battery = self._addargs['battery']
-
-            if 'battery_level' in self._addargs and \
-                    self._addargs['battery_level'] != self._result.battery_level:
-                self._result.battery_level = self._addargs['battery_level']
-
-            if 'api_version' in self._addargs and \
-                    self._addargs['api_version'] != self._result.api_version:
-                self._result.api_version = self._addargs['api_version']
-
-            if 'sketch_version' in self._addargs and \
-                    self._addargs['sketch_version'] != self._result.sketch_version:
-                self._result.sketch_version = self._addargs['sketch_version']
-
-            if 'sketch_name' in self._addargs and \
-                    self._addargs['sketch_name'] != self._result.sketch_name:
-                self._result.sketch_name = self._addargs['sketch_name']
-
-
-            if self.__commit():
-                self._log.debug('Update for {0} '
-                                'finished successfully'.format(self._result))
-                return True
-            else:
-                self._log.error('Updated failed for {0}'.format(self._result))
-                return False
+            self._log.error('Updated failed for {0}'.format(self._result))
+            return False
 
 
     def newID(self):
@@ -209,7 +203,7 @@ class Database():
     def isknown(self, node=False, sensor=0):
         self.__getsingle(node, sensor)
         if self._result:
-            self.__update(timestamp=True)
+            self.__update()
         return bool(self._result)
 
     def openhab(self, node=False, sensor=0):
