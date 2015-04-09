@@ -119,9 +119,7 @@ class MySensorSetReq(MySensor):
         if config.Publisher == 'MQTT':
             self._log.debug('Try to publish values to the MQTT Brocker on {0}: {1}'.format(config.MQTTBroker,
                                                                                            self._message))
-            self._publisher.publish(self._message['nodeid'],
-                                    self._message['childid'],
-                                    self._message['payload'])
+            self._publisher.publish(self._message)
 
         elif config.Publisher == 'Openhab' and  c['openhab'] is not None:
             self._log.debug('Try to push value to openhab: {0}'.format(self._message))
