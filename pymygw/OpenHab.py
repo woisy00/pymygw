@@ -3,7 +3,7 @@ import requests
 from datetime import datetime
 
 import config
-
+import tools
 
 class Openhab(object):
     def __init__(self):
@@ -21,31 +21,41 @@ class Openhab(object):
                 self.__getItems()
         return self._items
 
-    def Set(self, item=None, value=None):
+    def publish(self, msg):
         self._ok = False
-        if item is None or value is None:
-            self._log.error('Openhab missing item or value: item={0}, value={0}'.format(item, value))
-            return
-        elif item not in self.Items():
-            self._log.error('Openhab unknown item: {0}'.format(item))
-            return
+        self._log.debug('Try to push value to openhab: {0}'.format(msg))
+        self._data = tools.checkKeys(msg, ('openhab', 'payload', 'nodeid', 'childid'))
+        if self._data and self._data['openhab'] in self.Items():
+            otype = self.Items()[self._data['openhab']]
+            if otype == 'ContactItem':
+                if self._data['payload'] == '0':
+                    self._payload = 'CLOSED'
+                elif self._data['payload'] == '1':
+                    self._payload = 'OPEN'
+            else:
+                self._payload = self._data['payload']
+            if self._payload is not None:
+                self._url = '{0}/{1}/state'.format(config.OpenhabAPI, self._data['openhab'])
+                self._log.debug('Openhab put url {0} with data {1}'.format(self._url,\
+                                                                           self._payload))
+                self.__requestPut()
+                if self._ok:
+                    self._log.info('Openhab updated successfully:\n\
+                                    Node: {nodeid},\n\
+                                    Sensor: {childid}\n\
+                                    Openhab: {openhab}\n\
+                                    Value: {payload}'.format(**self._data))
 
-        otype = self.Items()[item]
-        self._data = None
-        if otype == 'ContactItem':
-            if value == '0':
-                self._data = 'CLOSED'
-            elif value == '1':
-                self._data = 'OPEN'
-        else:
-            self._data = value
-        if self._data is not None:
-            self._url = '{0}/{1}/state'.format(config.OpenhabAPI, item)
-            self._log.debug('Openhab put url {0} with data {1}'.format(self._url, self._data))
-            self.__requestPut()
-        else:
-            self._log.error('Openhab cant parse value: {0} for item: {1}'.format(value, item))
-        return self._ok
+                else:
+                    self._log.error('Openhab update failed:\n\
+                                     Node: {nodeid},\n\
+                                     Sensor: {childid}\n\
+                                     Openhab: {openhab}\n\
+                                     Value: {payload}'.format(**self._data))
+
+            else:
+                self._log.error('Openhab cant parse value: {0} for item: {1}'.format(self._data['payload'],\
+                                                                                     self._data['openhab']))
 
     def __requestPut(self):
         h = {'Content-Type': 'text/plain',
@@ -53,7 +63,7 @@ class Openhab(object):
         try:
 
             r = requests.put(url=self._url,
-                             data=self._data,
+                             data=self._payload,
                              headers=h,
                              timeout=5)
         except Exception, e:

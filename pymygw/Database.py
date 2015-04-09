@@ -74,7 +74,6 @@ class Database():
 
     def __update(self, timestamp=False):
         if timestamp:
-            self._result.last_seen = time.time()
             if self.__commit():
                 return True
             return False
@@ -83,7 +82,7 @@ class Database():
             '''
                 updates the db entrie if needed
             '''
-            self._changed = False
+            self._result.last_seen = time.time()
             if 'sensortype' in self._addargs and \
                     self._addargs['sensortype'] != self._result.sensor_type:
                 self._log.error('SensorType mismatch for {0} \n\
@@ -97,52 +96,40 @@ class Database():
                 self._log.debug('OpenhabDB entry update for {0} \n\
                                  New Openhab: {3}'.format(self._result,
                                                           openhab))
-                self._changed = True
                 self._result.openhab = openhab
 
             if 'comment' in self._addargs and \
                     self._addargs['comment'] != self._result.comment:
-                self._changed = True
                 self._result.comment = comment
 
             if 'battery' in self._addargs and \
                     self._addargs['battery'] != self._result.battery:
-                self._changed = True
                 self._result.battery = self._addargs['battery']
 
             if 'battery_level' in self._addargs and \
                     self._addargs['battery_level'] != self._result.battery_level:
-                self._changed = True
                 self._result.battery_level = self._addargs['battery_level']
 
             if 'api_version' in self._addargs and \
                     self._addargs['api_version'] != self._result.api_version:
-                self._changed = True
                 self._result.api_version = self._addargs['api_version']
 
             if 'sketch_version' in self._addargs and \
                     self._addargs['sketch_version'] != self._result.sketch_version:
-                self._changed = True
                 self._result.sketch_version = self._addargs['sketch_version']
 
             if 'sketch_name' in self._addargs and \
                     self._addargs['sketch_name'] != self._result.sketch_name:
-                self._changed = True
                 self._result.sketch_name = self._addargs['sketch_name']
 
 
-            if self._changed:
-                if self.__commit():
-                    self._log.debug('Update for {0} '
-                                    'finished successfully'.format(self._result))
-                    return True
-                else:
-                    self._log.error('Updated failed for {0}'.format(self._result))
-                    return False
-
-            self._log.debug('Nothing to update for {0}'.format(self._result))
-            return False
-
+            if self.__commit():
+                self._log.debug('Update for {0} '
+                                'finished successfully'.format(self._result))
+                return True
+            else:
+                self._log.error('Updated failed for {0}'.format(self._result))
+                return False
 
 
     def newID(self):

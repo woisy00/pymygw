@@ -3,6 +3,7 @@ import sys
 import logging
 
 import config
+import tools
 
 
 class MQTT(object):
@@ -33,33 +34,25 @@ class MQTT(object):
         self._PublishClient.loop_start()
         self._log.info('MQTT Client connected to Broker {0}'.format(config.MQTTBroker))
 
-
-    def __prepare(self):
-        if not all (k in self._msg for k in ('nodeid', 'childid', 'payload')):
-            self._log.error('MQTT missing key in message: {0}'.format(self._msg))
-            return False
-        self._node = self._msg['nodeid']
-        self._child = self._msg['childid']
-        self._payload = self._msg['payload']
-        return True
-
     def publish(self, msg):
-        self._msg = msg
-        self.__prepare()
-        returncode, msgid = self._PublishClient.publish('/{0}/{1}/{2}'.format(config.MQTTTopic,\
-                                                                              self._node,\
-                                                                              self._child),\
-                                                                              self._payload)
-        if returncode == 0:
-            self._log.info('MQTT Publish successfully: /{0}/{1}/{2}, value: {3}'.format(config.MQTTTopic,
-                                                                                        self._node,
-                                                                                        self._child,
-                                                                                        self._payload))
-        else:
-            self._log.error('MQTT Publish failed: /{0}/{1}/{2}, value: {3}'.format(config.MQTTTopic,
-                                                                                   self._node,
-                                                                                   self._child,
-                                                                                   self._payload))
+        self._log.debug('Try to publish values to the MQTT Brocker on {0}: {1}'.format(config.MQTTBroker,
+                                                                                       msg))
+        self._data = tools.checkKeys(msg, ('nodeid', 'childid', 'payload'))
+        if self._data:
+            returncode, msgid = self._PublishClient.publish('/{0}/{1}/{2}'.format(config.MQTTTopic,\
+                                                                                  self._data['nodeid'],\
+                                                                                  self._data['childid']),\
+                                                                                  self._data['payload'])
+            if returncode == 0:
+                self._log.info('MQTT Publish successfully: /{0}/{1}/{2}, value: {3}'.format(config.MQTTTopic,
+                                                                                            self._data['nodeid'],
+                                                                                            self._data['childid'],
+                                                                                            self._data['payload']))
+            else:
+                self._log.error('MQTT Publish failed: /{0}/{1}/{2}, value: {3}'.format(config.MQTTTopic,
+                                                                                       self._data['nodeid'],
+                                                                                       self._data['childid'],
+                                                                                       self._data['payload']))
 
     def disconnect(self):
         self._PublishClient.disconnect()

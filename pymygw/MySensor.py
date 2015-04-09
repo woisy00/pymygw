@@ -116,34 +116,7 @@ class MySensorSetReq(MySensor):
         r = self._db.add(node=self._message['nodeid'],
                          sensor=self._message['childid'],
                          sensortype=self.name(self._message['subtype']))
-        if config.Publisher == 'MQTT':
-            self._log.debug('Try to publish values to the MQTT Brocker on {0}: {1}'.format(config.MQTTBroker,
-                                                                                           self._message))
-            self._publisher.publish(self._message)
-
-        elif config.Publisher == 'Openhab' and  c['openhab'] is not None:
-            self._log.debug('Try to push value to openhab: {0}'.format(self._message))
-            r = self._publisher.Set(c['openhab'], value=self._message['payload'])
-            if r:
-                self._log.info('Openhab updated successfully:\n\
-                                Node: {0},\n\
-                                Sensor: {1}\n\
-                                Openhab: {2}\n\
-                                Value: {3}'.format(self._message['nodeid'],
-                                                   self._message['childid'],
-                                                   c['openhab'],
-                                                   self._message['payload']))
-
-            else:
-                self._log.error('Openhab update failed:\n\
-                                 Node: {0},\n\
-                                 Sensor: {1}\n\
-                                 Openhab: {2}\n\
-                                 Value: {3}'.format(self._message['nodeid'],
-                                                    self._message['childid'],
-                                                    c['openhab'],
-                                                    self._message['payload']))
-
+        self._publisher.publish(self._message)
 
 class MySensorInternal(MySensor):
     '''
