@@ -196,7 +196,8 @@ class Database():
                                                          nid))
 
     def get(self, node=False, sensor=0):
-        self.__getsingle(node, sensor)
+        if node:
+            self.__getsingle(node, sensor)
         return self._result if self._result else self._dbsession.query(Sensor).all()
 
     def openhab(self, node=False, sensor=0):

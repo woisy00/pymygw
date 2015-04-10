@@ -1,6 +1,6 @@
 import serial
 from time import sleep
-import logging
+from logging import getLogger
 
 import config
 import MySensor
@@ -9,8 +9,7 @@ import MySensor
 class Gateway(object):
     def __init__(self, publisher):
         self._MySensorStructureTemplate = config.MySensorStructureTemplate
-        self._log = logging.getLogger('pymygw')
-        self._dbresult = None
+        self._log = getLogger('pymygw')
 
         '''
             Init MySensor Objects
