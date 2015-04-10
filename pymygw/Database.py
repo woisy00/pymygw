@@ -7,6 +7,7 @@ import json
 from logging import getLogger
 
 import config
+import tools
 Base = declarative_base()
 
 class Sensor(Base):

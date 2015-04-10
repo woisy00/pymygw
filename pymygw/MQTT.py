@@ -1,6 +1,6 @@
 import paho.mqtt.client as mqtt
 import sys
-import logging
+from logging import getLogger
 
 import config
 import tools
@@ -8,7 +8,7 @@ import tools
 
 class MQTT(object):
     def __init__(self):
-        self._log = logging.getLogger('pymygw')
+        self._log = getLogger('pymygw')
         self.__client()
 
     def __client(self):

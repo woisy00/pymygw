@@ -1,13 +1,13 @@
-import logging
 import requests
 from datetime import datetime
+from logging import getLogger
 
 import config
 import tools
 
 class Openhab(object):
     def __init__(self):
-        self._log = logging.getLogger('pymygw')
+        self._log = getLogger('pymygw')
         self._rest = config.OpenhabAPI
         self._items = {}
 

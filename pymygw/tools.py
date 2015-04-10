@@ -1,8 +1,8 @@
-import logging
+from logging import getLogger
 
 def checkKeys(msg, keys):
     data = {}
-    log = logging.getLogger('pymygw')
+    log = getLogger('pymygw')
     if not all (k in msg for k in keys):
             log.error('missing key in message {0}\n',
                       'keys: {1}'.format(msg, keys))

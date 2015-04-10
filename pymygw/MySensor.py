@@ -1,4 +1,5 @@
 from time import time
+from logging import getLogger
 
 import config
 import logging
@@ -7,7 +8,7 @@ import Database
 
 class MySensor():
     def __init__(self):
-        self._log = logging.getLogger('pymygw')
+        self._log = getLogger('pymygw')
         '''
             RevertDict id -> Name
         '''
