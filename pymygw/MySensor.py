@@ -114,9 +114,9 @@ class MySensorSetReq(MySensor):
 
     def __set(self):
         self._log.debug('Message in set: {0}'.format(self._message))
-        r = self._db.add(node=self._message['nodeid'],
-                         sensor=self._message['childid'],
-                         sensortype=self.name(self._message['subtype']))
+        r = self._db.process(node=self._message['nodeid'],
+                             sensor=self._message['childid'],
+                             sensortype=self.name(self._message['subtype']))
         self._publisher.publish(self._message)
 
 class MySensorInternal(MySensor):

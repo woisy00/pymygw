@@ -3,12 +3,14 @@ from datetime import datetime
 from logging import getLogger
 
 import config
+import Database
 import tools
 
 class Openhab(object):
     def __init__(self):
         self._log = getLogger('pymygw')
         self._rest = config.OpenhabAPI
+        self._db = Database.Database()
         self._items = {}
 
     def Items(self):
@@ -24,38 +26,43 @@ class Openhab(object):
     def publish(self, msg):
         self._ok = False
         self._log.debug('Try to push value to openhab: {0}'.format(msg))
-        self._data = tools.checkKeys(msg, ('openhab', 'payload', 'nodeid', 'childid'))
-        if self._data and self._data['openhab'] in self.Items():
-            otype = self.Items()[self._data['openhab']]
-            if otype == 'ContactItem':
-                if self._data['payload'] == '0':
-                    self._payload = 'CLOSED'
-                elif self._data['payload'] == '1':
-                    self._payload = 'OPEN'
-            else:
-                self._payload = self._data['payload']
-            if self._payload is not None:
-                self._url = '{0}/{1}/state'.format(config.OpenhabAPI, self._data['openhab'])
-                self._log.debug('Openhab put url {0} with data {1}'.format(self._url,\
-                                                                           self._payload))
-                self.__requestPut()
-                if self._ok:
-                    self._log.info('Openhab updated successfully:\n\
-                                    Node: {nodeid},\n\
-                                    Sensor: {childid}\n\
-                                    Openhab: {openhab}\n\
-                                    Value: {payload}'.format(**self._data))
+        self._data = tools.checkKeys(msg, ('payload', 'nodeid', 'childid'))
+        if self._data:
+            self._data['openhab'] = self._db.openhab(node=self._data['nodeid'], sensor=self._data['childid'])
+            if self._data['openhab'] and self._data['openhab'] in self.Items():
+                otype = self.Items()[self._data['openhab']]
+                if otype == 'ContactItem':
+                    if self._data['payload'] == '0':
+                        self._payload = 'CLOSED'
+                    elif self._data['payload'] == '1':
+                        self._payload = 'OPEN'
+                else:
+                    self._payload = self._data['payload']
+                if self._payload is not None:
+                    self._url = '{0}/{1}/state'.format(config.OpenhabAPI, self._data['openhab'])
+                    self._log.debug('Openhab put url {0} with data {1}'.format(self._url,\
+                                                                               self._payload))
+                    self.__requestPut()
+                    if self._ok:
+                        self._log.info('Openhab updated successfully:\n\
+                                        Node: {nodeid},\n\
+                                        Sensor: {childid}\n\
+                                        Openhab: {openhab}\n\
+                                        Value: {payload}'.format(**self._data))
+
+                    else:
+                        self._log.error('Openhab update failed:\n\
+                                         Node: {nodeid},\n\
+                                         Sensor: {childid}\n\
+                                         Openhab: {openhab}\n\
+                                         Value: {payload}'.format(**self._data))
 
                 else:
-                    self._log.error('Openhab update failed:\n\
-                                     Node: {nodeid},\n\
-                                     Sensor: {childid}\n\
-                                     Openhab: {openhab}\n\
-                                     Value: {payload}'.format(**self._data))
+                    self._log.error('Openhab cant parse value: {0} for item: {1}'.format(self._data['payload'],\
+                                                                                         self._data['openhab']))
 
             else:
-                self._log.error('Openhab cant parse value: {0} for item: {1}'.format(self._data['payload'],\
-                                                                                     self._data['openhab']))
+                self._log.error('Openhab entry missing: {0}'.format(self._data))
 
     def __requestPut(self):
         h = {'Content-Type': 'text/plain',

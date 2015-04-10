@@ -3,7 +3,7 @@
 '''
 DEBUG = True
 LogFile = 'pymygw.log'
-# MQTT/Openhab
+# MQTT or Openhab
 Publisher = 'MQTT'
 
 '''

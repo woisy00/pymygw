@@ -7,7 +7,6 @@ import json
 from logging import getLogger
 
 import config
-import tools
 Base = declarative_base()
 
 class Sensor(Base):
@@ -78,44 +77,44 @@ class Database():
             updates the db entrie if needed
         '''
         self._result.last_seen = time.time()
-        if 'sensortype' in self._addargs and \
-                self._addargs['sensortype'] != self._result.sensor_type:
+        if 'sensortype' in self._args and \
+                self._args['sensortype'] != self._result.sensor_type:
             self._log.error('SensorType mismatch for {0} \n\
                              Reported Type: {3}'.format(self._result,
                                                         sensortype))
 
             return False
 
-        if 'openhab' in self._addargs and \
-                self._addargs['openhab'] != self._result.openhab:
+        if 'openhab' in self._args and \
+                self._args['openhab'] != self._result.openhab:
             self._log.debug('OpenhabDB entry update for {0} \n\
                              New Openhab: {3}'.format(self._result,
                                                       openhab))
             self._result.openhab = openhab
 
-        if 'comment' in self._addargs and \
-                self._addargs['comment'] != self._result.comment:
+        if 'comment' in self._args and \
+                self._args['comment'] != self._result.comment:
             self._result.comment = comment
 
-        if 'battery' in self._addargs and \
-                self._addargs['battery'] != self._result.battery:
-            self._result.battery = self._addargs['battery']
+        if 'battery' in self._args and \
+                self._args['battery'] != self._result.battery:
+            self._result.battery = self._args['battery']
 
-        if 'battery_level' in self._addargs and \
-                self._addargs['battery_level'] != self._result.battery_level:
-            self._result.battery_level = self._addargs['battery_level']
+        if 'battery_level' in self._args and \
+                self._args['battery_level'] != self._result.battery_level:
+            self._result.battery_level = self._args['battery_level']
 
-        if 'api_version' in self._addargs and \
-                self._addargs['api_version'] != self._result.api_version:
-            self._result.api_version = self._addargs['api_version']
+        if 'api_version' in self._args and \
+                self._args['api_version'] != self._result.api_version:
+            self._result.api_version = self._args['api_version']
 
-        if 'sketch_version' in self._addargs and \
-                self._addargs['sketch_version'] != self._result.sketch_version:
-            self._result.sketch_version = self._addargs['sketch_version']
+        if 'sketch_version' in self._args and \
+                self._args['sketch_version'] != self._result.sketch_version:
+            self._result.sketch_version = self._args['sketch_version']
 
-        if 'sketch_name' in self._addargs and \
-                self._addargs['sketch_name'] != self._result.sketch_name:
-            self._result.sketch_name = self._addargs['sketch_name']
+        if 'sketch_name' in self._args and \
+                self._args['sketch_name'] != self._result.sketch_name:
+            self._result.sketch_name = self._args['sketch_name']
 
 
         if self.__commit():
@@ -153,8 +152,8 @@ class Database():
 
 
 
-    def add(self, node=False, sensor=0, sensortype=None, **kwargs):
-        self._addargs = kwargs
+    def process(self, node=False, sensor=0, sensortype=None, **kwargs):
+        self._args = kwargs
         if not node:
             return False
         self.__getsingle(node, sensor)
@@ -167,45 +166,38 @@ class Database():
         else:
             '''
                 Node + Sensor is unknown
-                create new DB entrie
+                check if new sensor or new node
             '''
-            if self.isknown(node=node):
+            if self.__getsingle(node, sensor=0):
                 '''
-                    node is known, but new sensor
+                    node is known, sensor 0 is always created
                 '''
                 nid = self._node
+                self._log.info('adding new sensor')
             else:
                 '''
-                    Node is unknown (old Sensor)
+                    Node is unknown but it offers an id (old Node/Sensor)
                 '''
                 nid = node
+                self._log.info('adding old Node/Sensor')
+
             newsensor = Sensor(node_id=nid,
                                 sensor_id=sensor,
                                 sensor_type=sensortype,
                                 last_seen=time.time())
             self._dbsession.add(newsensor)
-            self._log.info('adding new sensor')
             if self.__commit():
                 self._log.info('Sensor {0} added on'
                                'Node {1}'.format(sensor,
                                                  nid))
-                return True
             else:
                 self._log.error('Adding Sensor {0} on '
                                 'Node {1} failed'.format(sensor,
                                                          nid))
-                return False
-        return False
 
     def get(self, node=False, sensor=0):
         self.__getsingle(node, sensor)
         return self._result if self._result else self._dbsession.query(Sensor).all()
-
-    def isknown(self, node=False, sensor=0):
-        self.__getsingle(node, sensor)
-        if self._result:
-            self.__update()
-        return bool(self._result)
 
     def openhab(self, node=False, sensor=0):
         self.__getsingle(node, sensor)
