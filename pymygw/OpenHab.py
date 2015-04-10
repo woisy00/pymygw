@@ -28,7 +28,8 @@ class Openhab(object):
         self._log.debug('Try to push value to openhab: {0}'.format(msg))
         self._data = tools.checkKeys(msg, ('payload', 'nodeid', 'childid'))
         if self._data:
-            self._data['openhab'] = self._db.openhab(node=self._data['nodeid'], sensor=self._data['childid'])
+            self._data['openhab'] = self._db.openhab(node=self._data['nodeid'],
+                                                     sensor=self._data['childid'])
             if self._data['openhab'] and self._data['openhab'] in self.Items():
                 otype = self.Items()[self._data['openhab']]
                 if otype == 'ContactItem':
@@ -39,7 +40,8 @@ class Openhab(object):
                 else:
                     self._payload = self._data['payload']
                 if self._payload is not None:
-                    self._url = '{0}/{1}/state'.format(config.OpenhabAPI, self._data['openhab'])
+                    self._url = '{0}/{1}/state'.format(config.OpenhabAPI,
+                                                       self._data['openhab'])
                     self._log.debug('Openhab put url {0} with data {1}'.format(self._url,\
                                                                                self._payload))
                     self.__requestPut()
@@ -97,10 +99,12 @@ class Openhab(object):
                 try:
                     self._response = r.json()
                 except Exception, e:
-                    self._log.error('Openhab json load failed error: {0} with content: {1}'.format(e, r.content))
+                    self._log.error('Openhab json load failed error: {0}'
+                                    'with content: {1}'.format(e, r.content))
                     self._ok = False
         else:
-            self._log.error('Openhab got error {0} with HTTP Code: {1}'.format(r.content, r.status_code))
+            self._log.error('Openhab got error {0}'
+                            'with HTTP Code: {1}'.format(r.content, r.status_code))
 
     def __getItems(self):
         self._url = '{0}/?type=json'.format(self._rest)

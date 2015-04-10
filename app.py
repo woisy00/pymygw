@@ -1,9 +1,7 @@
-from tornado.ioloop import IOLoop
 from threading import Thread
 import sys
 import signal
-import time
-import os
+import os.path
 import logging
 import logging.handlers
 
@@ -27,32 +25,16 @@ else:
     log.setLevel(logging.INFO)
 
 
+'''
+    Publisher
+'''
 if config.Publisher == 'MQTT':
     from pymygw.MQTT import MQTT
     publisher = MQTT()
 elif config.Publisher == 'Openhab':
-    from tornado.web import Application, StaticFileHandler
     from pymygw.OpenHab import Openhab
-    from pymygw import Webinterface
+    #from pymygw import Webinterface
     publisher = Openhab()
-
-    TornadoLoop = None
-    Web = Application([
-        (r'/do', Webinterface.CommandHandler, dict(openhab=publisher)),
-        (r'/static/(.*)', StaticFileHandler, {'path': os.path.join(config.WebDir, 'static')}),
-        (r'/', Webinterface.IndexHandler, dict(openhab=publisher)),
-    ])
-
-    Web.listen(config.WebPort)
-
-    logging.getLogger("tornado.access").addHandler(handler)
-    logging.getLogger("tornado.access").propagate = False
-    logging.getLogger("tornado.application").addHandler(handler)
-    logging.getLogger("tornado.application").propagate = False
-    logging.getLogger("tornado.general").addHandler(handler)
-    logging.getLogger("tornado.general").propagate = False
-
-
 else:
     log.error('Unknown Publisher {0}'.format(config.Publisher))
     sys.exit(1)
