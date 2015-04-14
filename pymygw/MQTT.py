@@ -11,13 +11,22 @@ class MQTT(object):
         self._log = getLogger('pymygw')
         self.__client()
 
+    def __setAuth(self):
+        if config.MQTTUsername is not None and\
+                config.MQTTPassword is not None:
+            self._PublishClient.username_pw_set(config.MQTTUsername,
+                                                password=config.MQTTPassword)
+
     def __client(self):
         self._PublishClient = mqtt.Client(client_id='pymygw-serialgw', protocol=config.MQTTProtocol)
         if config.MQTTTLS:
-            self._PublishClient.tls_set(config.MQTTCa,
-                                        certfile=config.MQTTCert,
-                                        keyfile=config.MQTTKey)
-            #enable for testing only
+            if config.MQTTCert and config.MQTTKey:
+                self._PublishClient.tls_set(config.MQTTCa,
+                                            certfile=config.MQTTCert,
+                                            keyfile=config.MQTTKey)
+            else:
+                self._PublishClient.tls_set(config.MQTTCa)
+            # enable for testing only
             #self._PublishClient.tls_insecure_set(True)
             self.__connect(config.MQTTTLSPort)
         else:
@@ -25,7 +34,8 @@ class MQTT(object):
 
     def __connect(self, p):
         try:
-            self._PublishClient.connect(config.MQTTBroker,  port=p)
+            self.__setAuth()
+            self._PublishClient.connect(config.MQTTBroker, port=p)
         except Exception, e:
             self._log.error('MQTT Client connection to Broker {0}, Port {1} failed. {2}'.format(config.MQTTBroker,
                                                                                                 p,
