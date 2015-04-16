@@ -2,7 +2,6 @@ from time import time
 from logging import getLogger
 
 import config
-import logging
 import Database
 
 
@@ -114,10 +113,9 @@ class MySensorSetReq(MySensor):
 
     def __set(self):
         self._log.debug('Message in set: {0}'.format(self._message))
-        r = self._db.process(node=self._message['nodeid'],
-                             sensor=self._message['childid'],
-                             sensortype=self.name(self._message['subtype']))
+        self._db.process(self._message)
         self._publisher.publish(self._message)
+
 
 class MySensorInternal(MySensor):
     '''
@@ -157,7 +155,8 @@ class MySensorInternal(MySensor):
         elif self._message['subtype'] == self.id('I_CHILDREN'):
             pass
         elif self._message['subtype'] == self.id('I_SKETCH_NAME'):
-            pass
+            self._log.debug('Processed by I_SKETCH_NAME: {0}'.format(self._message))
+            self.__Sketch_Name()
         elif self._message['subtype'] == self.id('I_SKETCH_VERSION'):
             pass
         elif self._message['subtype'] == self.id('I_REBOOT'):
@@ -197,6 +196,6 @@ class MySensorInternal(MySensor):
                      'subtype': self.id('I_TIME'),
                      'payload': int(time())}
 
-
     def __Sketch_Name(self):
         pass
+

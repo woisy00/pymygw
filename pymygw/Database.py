@@ -9,6 +9,7 @@ from logging import getLogger
 import config
 Base = declarative_base()
 
+
 class Sensor(Base):
     __tablename__ = 'sensor'
     id = Column(Integer, primary_key=True)
@@ -25,7 +26,6 @@ class Sensor(Base):
     last_seen = Column(Integer, default=0)
 
     __table_args__ = (UniqueConstraint('node_id', 'sensor_id'),)
-
 
     def __str__(self):
         return json.dumps({'Node': self.node_id,
@@ -49,16 +49,20 @@ class Database():
         Base.metadata.bind = self._engine
         self._dbsession = scoped_session(sessionmaker(bind=self._engine))
 
+    def __getSensorsByNode(self, n):
+        pass
+
     def __getsingle(self, n, s):
         self._node = n
         self._sensor = s
-        self._result = None
+        self._result = False
         try:
             self._result = self._dbsession.query(Sensor)\
                                           .filter(Sensor.node_id == self._node,
                                                   Sensor.sensor_id == self._sensor)\
                                           .one()
         except NoResultFound:
+            self._result = False
             self._log.debug('No DB entry found for Node: {0} Sensor; {1}'.format(n, s))
 
     def __commit(self):
@@ -81,7 +85,7 @@ class Database():
                 self._args['sensortype'] != self._result.sensor_type:
             self._log.error('SensorType mismatch for {0} \n\
                              Reported Type: {3}'.format(self._result,
-                                                        sensortype))
+                                                        self._args['sensortype']))
 
             return False
 
@@ -89,12 +93,12 @@ class Database():
                 self._args['openhab'] != self._result.openhab:
             self._log.debug('OpenhabDB entry update for {0} \n\
                              New Openhab: {3}'.format(self._result,
-                                                      openhab))
-            self._result.openhab = openhab
+                                                      self._args['openhab']))
+            self._result.openhab = self._args['openhab']
 
         if 'comment' in self._args and \
                 self._args['comment'] != self._result.comment:
-            self._result.comment = comment
+            self._result.comment = self._args['comment']
 
         if 'battery' in self._args and \
                 self._args['battery'] != self._result.battery:
@@ -116,7 +120,6 @@ class Database():
                 self._args['sketch_name'] != self._result.sketch_name:
             self._result.sketch_name = self._args['sketch_name']
 
-
         if self.__commit():
             self._log.debug('Update for {0} '
                             'finished successfully'.format(self._result))
@@ -124,7 +127,6 @@ class Database():
         else:
             self._log.error('Updated failed for {0}'.format(self._result))
             return False
-
 
     def newID(self):
         '''
@@ -140,35 +142,40 @@ class Database():
         else:
             newid = lastid[0] + 1
         newnode = Sensor(node_id=newid,
-                         sensor_id=sensor,
+                         sensor_id=0,
                          last_seen=time.time())
         self._dbsession.add(newnode)
         if self.__commit():
             self._log.debug('New node added to DB: {0}'.format(newnode))
             return newid
         else:
-            self._log.error('Adding node failed: {0}'.format(newode))
+            self._log.error('Adding node failed: {0}'.format(newnode))
             return False
 
-
-
-    def process(self, node=False, sensor=0, sensortype=None, **kwargs):
-        self._args = kwargs
-        if not node:
+    #def process(self, node=False, sensor=0, sensortype=None, **kwargs):
+    def process(self, msg):
+        self._args = msg
+        if 'nodeid' not in self._args:
+            self._log.error('nodeid not found: {0}'.format(self._args))
             return False
-        self.__getsingle(node, sensor)
+        if 'childid' not in self._args:
+            self._log.debug('childid not found: {0}'.format(self._args))
+            self._args['childid'] = 0
+        self.__getsingle(self._args['nodeid'], self._args['childid'])
         if self._result:
             '''
                 Node + Sensor is known
                 update entry
             '''
+            self._log.debug('doing update for {0}'.format(self._args))
             self.__update()
         else:
             '''
                 Node + Sensor is unknown
                 check if new sensor or new node
             '''
-            if self.__getsingle(node, sensor=0):
+            self.__getsingle(self._args['nodeid'], sensor=0)
+            if self._result:
                 '''
                     node is known, sensor 0 is always created
                 '''
@@ -178,21 +185,21 @@ class Database():
                 '''
                     Node is unknown but it offers an id (old Node/Sensor)
                 '''
-                nid = node
+                nid = self._args['nodeid']
                 self._log.info('adding old Node/Sensor')
 
             newsensor = Sensor(node_id=nid,
-                                sensor_id=sensor,
-                                sensor_type=sensortype,
-                                last_seen=time.time())
+                               sensor_id=self._args['childid'],
+                               sensor_type=self._args['subtype'],
+                               last_seen=time.time())
             self._dbsession.add(newsensor)
             if self.__commit():
                 self._log.info('Sensor {0} added on'
-                               'Node {1}'.format(sensor,
+                               'Node {1}'.format(self._args['childid'],
                                                  nid))
             else:
                 self._log.error('Adding Sensor {0} on '
-                                'Node {1} failed'.format(sensor,
+                                'Node {1} failed'.format(self._args['childid'],
                                                          nid))
 
     def get(self, node=False, sensor=0):
