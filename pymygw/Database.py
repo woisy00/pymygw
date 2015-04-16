@@ -81,18 +81,26 @@ class Database():
             updates the db entrie if needed
         '''
         self._result.last_seen = time.time()
-        if 'sensortype' in self._args and \
-                self._args['sensortype'] != self._result.sensor_type:
-            self._log.error('SensorType mismatch for {0} \n\
-                             Reported Type: {3}'.format(self._result,
-                                                        self._args['sensortype']))
+        if 'sensortype' in self._args:
+            '''
+                strip of first two characters
+                could be S_ V_
+                depends on presentation or set/req
+            '''
+            self._args['sensortype'] = self._args['sensortype'].split('_')[1]
+            if not self._result.sensor_type:
+                self._result.sensor_type = self._args['sensortype']
+            if self._args['sensortype'] != self._result.sensor_type:
+                self._log.error('SensorType mismatch: DB {0} \n\
+                                 Reported Type: {1}'.format(self._result.sensor_type,
+                                                            self._args['sensortype']))
 
-            return False
+                return False
 
         if 'openhab' in self._args and \
                 self._args['openhab'] != self._result.openhab:
-            self._log.debug('OpenhabDB entry update for {0} \n\
-                             New Openhab: {3}'.format(self._result,
+            self._log.debug('OpenhabDB entry mismatch: DB {0} \n\
+                             New Openhab: {1}'.format(self._result.openhab,
                                                       self._args['openhab']))
             self._result.openhab = self._args['openhab']
 
@@ -161,20 +169,22 @@ class Database():
         if 'childid' not in self._args:
             self._log.debug('childid not found: {0}'.format(self._args))
             self._args['childid'] = 0
+        if int(self._args['childid']) == 255:
+            self._log.debug('skipping childid 255')
+            return
         self.__getsingle(self._args['nodeid'], self._args['childid'])
         if self._result:
             '''
                 Node + Sensor is known
                 update entry
             '''
-            self._log.debug('doing update for {0}'.format(self._args))
             self.__update()
         else:
             '''
                 Node + Sensor is unknown
                 check if new sensor or new node
             '''
-            self.__getsingle(self._args['nodeid'], sensor=0)
+            self.__getsingle(self._args['nodeid'], 0)
             if self._result:
                 '''
                     node is known, sensor 0 is always created

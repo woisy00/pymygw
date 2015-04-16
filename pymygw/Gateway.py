@@ -8,7 +8,6 @@ import MySensor
 
 class Gateway(object):
     def __init__(self, publisher):
-        self._MySensorStructureTemplate = config.MySensorStructureTemplate
         self._log = getLogger('pymygw')
 
         '''
@@ -65,7 +64,7 @@ class Gateway(object):
                 self._log.info('Skipping debug message: {0}'.format(self.response))
                 return None
 
-            self._incomingMessage = self._MySensorStructureTemplate
+            self.__createMessageTemplate()
             n, c, m, a, s, p = self._splitresponse
 
             self._incomingMessage['nodeid'] = n
@@ -99,6 +98,11 @@ class Gateway(object):
             if self._cmd is not None:
                 self.__sendSerial()
 
+    def __createMessageTemplate(self):
+        self._incomingMessage = {}
+        for k in config.MySensorStructureTemplate:
+            self._incomingMessage[k] = None
+
     def __isDebug(self):
         '''
             Internal ID 3
@@ -119,9 +123,9 @@ class Gateway(object):
         '''
             prepare the Serial Command
         '''
-        for k in self._MySensorStructureTemplate:
+        for k in config.MySensorStructureTemplate:
             if k not in self._cmd:
-                self._cmd[k] = self._MySensorStructureTemplate[k]
+                self._cmd[k] = config.MySensorStructureTemplate[k]
 
         self._serialcmd = '{nodeid}{sep}{childid}{sep}{messagetype}{sep}{ack}{sep}{subtype}{sep}{payload}\n'.format(**self._cmd)
 

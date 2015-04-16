@@ -93,8 +93,11 @@ class MySensorPresentation(MySensor):
         MySensor.__init__(self)
 
     def process(self):
-        '''TODO'''
-        pass
+        self._message['sensortype'] = self.name(self._message['subtype'])
+        self._message['comment'] = self.comment(self.name(self._message['subtype']))
+        self._message['api_version'] = self._message['payload']
+        self._log.debug('Message in presentation: {0}'.format(self._message))
+        self._db.process(self._message)
 
 
 class MySensorSetReq(MySensor):
@@ -107,11 +110,11 @@ class MySensorSetReq(MySensor):
         self._publisher = publisher
 
     def process(self):
-        self._log.debug('Processing Set/Req Message')
         if self._message['messagetype'] == 'SET':
             self.__set()
 
     def __set(self):
+        self._message['sensortype'] = self.name(self._message['subtype'])
         self._log.debug('Message in set: {0}'.format(self._message))
         self._db.process(self._message)
         self._publisher.publish(self._message)
