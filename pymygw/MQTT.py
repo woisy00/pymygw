@@ -86,10 +86,10 @@ class MQTT(object):
         if self._data and self.connected:
             self._log.debug('Try to publish values to the MQTT Brocker on {0}: {1}'.format(config.MQTTBroker,
                                                                                            msg))
-            result, msgid = self._PublishClient.publish('/{0}/{1}/{2}'.format(config.MQTTTopic,
-                                                                              self._data['nodeid'],
-                                                                              self._data['childid'],
-                                                                              self._data['payload']))
+            topic = '/{0}/{1}/{2}'.format(config.MQTTTopic,
+                                          self._data['nodeid'],
+                                          self._data['childid'])
+            result, msgid = self._PublishClient.publish(topic, self._data['payload'])
 
             self._log.debug('MQTT Returncode {0}, msgid {1}'.format(result, msgid))
             if result == 0:
