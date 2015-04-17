@@ -55,7 +55,6 @@ class Database():
     def __getsingle(self, n, s):
         self._node = n
         self._sensor = s
-        self._result = False
         try:
             self._result = self._dbsession.query(Sensor)\
                                           .filter(Sensor.node_id == self._node,

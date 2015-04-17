@@ -30,6 +30,7 @@ EOL = '\n'
 MQTTBroker = 'mqtt.home'
 MQTTTLS = True
 MQTTPort = 1883
+MQTTTLSPort = 8883
 MQTTUsername = None
 MQTTPassword = None
 # https://github.com/jpmens/mqttwarn/issues/95
@@ -38,7 +39,6 @@ MQTTTopic = 'pymygw'
 MQTTCert = 'pymygw.crt'
 MQTTKey = 'pymygw.key'
 MQTTCa = 'ca.crt'
-MQTTTLSPort = 8883
 
 '''
     Web Config

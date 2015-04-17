@@ -1,7 +1,6 @@
 from threading import Thread
 import sys
 import signal
-import os.path
 import logging
 import logging.handlers
 
@@ -38,6 +37,7 @@ elif config.Publisher == 'Openhab':
 else:
     log.error('Unknown Publisher {0}'.format(config.Publisher))
     sys.exit(1)
+
 
 def exithandler(signal, frame):
     print 'Ctrl-C.... Exiting'
