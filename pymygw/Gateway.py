@@ -1,4 +1,5 @@
 import serial
+from threading import Thread
 from time import sleep
 from logging import getLogger
 
@@ -6,9 +7,10 @@ import config
 import MySensor
 
 
-class Gateway(object):
+class Gateway(Thread):
     def __init__(self, publisher):
         self._log = getLogger('pymygw')
+        Thread.__init__(self)
 
         '''
             Init MySensor Objects
@@ -24,6 +26,7 @@ class Gateway(object):
         self._serialIsConnected = False
         self._serialIsWriteable = False
 
+        self._count = 0
         self.__connectSerial()
         sleep(5)
         self._cmd = {'nodeid': 0,
@@ -33,7 +36,7 @@ class Gateway(object):
                      'payload': 'Get Version'}
         self.__sendSerial()
 
-    def loop(self):
+    def run(self):
         '''
             Main Loop
         '''
@@ -41,11 +44,13 @@ class Gateway(object):
             try:
                 self.response = self._serialConnection.readline()
             except:
+                self._log.debug('exception in mainloop')
                 continue
             if self.response:
                 self.response = self.response.rstrip(config.EOL)
                 self._log.info('incoming message: {0}'.format(self.response))
                 self.__parseIncoming()
+            self._count += 1
 
     def stop(self):
         self._log.info('stop recieved, shutting down')

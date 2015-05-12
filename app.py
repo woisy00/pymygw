@@ -1,4 +1,3 @@
-from threading import Thread
 import sys
 import signal
 import logging
@@ -6,6 +5,7 @@ import logging.handlers
 
 import config
 from pymygw.Gateway import Gateway
+from pymygw.Webinterface import app
 
 
 '''
@@ -42,15 +42,16 @@ else:
 def exithandler(signal, frame):
     print 'Ctrl-C.... Exiting'
     serialGW.stop()
-    thread.join(1)
+    publisher.disconnect()
+    serialGW.join()
     sys.exit(0)
 
 if __name__ == "__main__":
     for sig in (signal.SIGINT, signal.SIGTERM):
         signal.signal(sig, exithandler)
     serialGW = Gateway(publisher)
-    thread = Thread(target=serialGW.loop())
-    thread.daemon = True
-    thread.start()
+    serialGW.daemon = True
+    serialGW.start()
+    app.run(host='0.0.0.0')
 
 
