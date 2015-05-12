@@ -5,19 +5,57 @@
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>PyMyGW Webinterface</title>
-
     <link href="static/bootstrap/css/bootstrap.min.css" rel="stylesheet">
  </head>
  <body>
   <div class="container">
-    <div class="row alerts">
+   <div class="row alerts">
+   </div>
+   <div class="row">
+    <h2>Items</h2>
+    <div class="table-responsive">
+     <table class="table table-bordered table-hover" id="items">
+      <thead>
+       <tr>
+        <th>Node</th>
+        <th>Sensor</th>
+        <th>Sensor Type</th>
+        <th>Comment</th>
+        {% if config.Publisher == 'Openhab' %}
+         <th>Openhab</th>
+        {% elif config.Publisher == 'MQTT' %}
+         <th>MQTT</th>
+        {% endif %}
+        <th>Battery Level</th>
+        <th>API Version</th>
+        <th>Sketch Name</th>
+        <th>Sketch Version</th>
+        <th>Last Seen</th>
+       </tr>
+      </thead>
+      <tbody>
+       {% for s in sensors %}
+        <tr id="sensor">
+         <td>{{ s.node_id }}</td>
+         <td>{{ s.sensor_id }}</td>
+         <td>{{ s.sensor_type }}</td>
+         <td>{{ s.comment }}</td>
+         {% if config.Publisher == 'Openhab' %}
+          <td>s.openhab</td>
+         {% elif config.Publisher == 'MQTT' %}
+          <td>/{{ config.MQTTTopic }}/{{ s.node_id }}/{{ s.sensor_id }}</td>
+         {% endif %}
+         <td>{{ s.battery_level }}</td>
+         <td>{{ s.api_version }}</td>
+         <td>{{ s.sketch_name }}</td>
+         <td>{{ s.sketch_version }}</td>
+         <td>{{ s.last_seen | timestamp2date }}</td>
+        </tr>
+       {% endfor %}
+      </tbody>
+     </table>
     </div>
-    <div class="row">
-        <h2>Items</h2>
-        {% for s in sensors %}
-            {{ s }}
-        {% endfor %}
-    </div>
+   </div>
   </div>
   <script src="static/jquery.min.js" type="text/javascript"></script>
  </body>
