@@ -26,7 +26,6 @@ class Gateway(Thread):
         self._serialIsConnected = False
         self._serialIsWriteable = False
 
-        self._count = 0
         self.__connectSerial()
         sleep(5)
         self._cmd = {'nodeid': 0,
@@ -50,7 +49,6 @@ class Gateway(Thread):
                 self.response = self.response.rstrip(config.EOL)
                 self._log.info('incoming message: {0}'.format(self.response))
                 self.__parseIncoming()
-            self._count += 1
 
     def stop(self):
         self._log.info('stop recieved, shutting down')
