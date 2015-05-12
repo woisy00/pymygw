@@ -2,6 +2,7 @@ from sqlalchemy import create_engine, Column, Integer, Float, String, UniqueCons
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker, scoped_session
 from sqlalchemy.orm.exc import NoResultFound
+from sqlalchemy.pool import StaticPool
 import time
 import json
 from logging import getLogger
@@ -44,10 +45,13 @@ class Sensor(Base):
 class Database():
     def __init__(self):
         self._log = getLogger('pymygw')
-        self._engine = create_engine(config.Database)
+        self._engine = create_engine(config.Database,
+                                     connect_args={'check_same_thread': False},
+                                     poolclass=StaticPool)
         Base.metadata.create_all(self._engine)
         Base.metadata.bind = self._engine
         self._dbsession = scoped_session(sessionmaker(bind=self._engine))
+        self._result = False
 
     def __getSensorsByNode(self, n):
         pass
@@ -67,11 +71,10 @@ class Database():
     def __commit(self):
         try:
             self._dbsession.commit()
-            self._log.debug('Commit successfull: {0}'.format(self._result))
+            self._log.debug('Commit successfull')
             return True
         except Exception, e:
-            self._log.error('Commit failed for {0} \n\
-                             Exception: {1}'.format(self._result, e))
+            self._log.error('Commit failed! Exception: {0}'.format(e))
             self._dbsession.rollback()
             return False
 
@@ -199,7 +202,6 @@ class Database():
 
             newsensor = Sensor(node_id=nid,
                                sensor_id=self._args['childid'],
-                               sensor_type=self._args['subtype'],
                                last_seen=time.time())
             self._dbsession.add(newsensor)
             if self.__commit():

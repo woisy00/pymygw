@@ -31,8 +31,8 @@ MQTTBroker = 'mqtt.home'
 MQTTTLS = True
 MQTTPort = 1883
 MQTTTLSPort = 8883
-MQTTUsername = None
-MQTTPassword = None
+MQTTUsername = 'pymygw'
+MQTTPassword = 'pymygw'
 # https://github.com/jpmens/mqttwarn/issues/95
 MQTTProtocol = 3
 MQTTTopic = 'pymygw'
