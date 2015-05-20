@@ -53,16 +53,20 @@ class Database():
         self._dbsession = scoped_session(sessionmaker(bind=self._engine))
         self._result = False
 
-    def __getSensorsByNode(self, n):
-        pass
-
-    def __getsingle(self, n, s):
-        self._node = n
-        self._sensor = s
+    def __getbyNode(self, n):
         try:
             self._result = self._dbsession.query(Sensor)\
-                                          .filter(Sensor.node_id == self._node,
-                                                  Sensor.sensor_id == self._sensor)\
+                                          .filter(Sensor.node_id == n)\
+                                          .all()
+        except NoResultFound:
+            self._result = False
+            self._log.debug('No DB entry found for Node: {0}'.format(n))
+
+    def __getbySensorandNode(self, n, s):
+        try:
+            self._result = self._dbsession.query(Sensor)\
+                                          .filter(Sensor.node_id == n,
+                                                  Sensor.sensor_id == s)\
                                           .one()
         except NoResultFound:
             self._result = False
@@ -162,7 +166,6 @@ class Database():
             self._log.error('Adding node failed: {0}'.format(newnode))
             return False
 
-    #def process(self, node=False, sensor=0, sensortype=None, **kwargs):
     def process(self, msg):
         self._args = msg
         if 'nodeid' not in self._args:
@@ -174,7 +177,7 @@ class Database():
         if int(self._args['childid']) == 255:
             self._log.debug('skipping childid 255')
             return
-        self.__getsingle(self._args['nodeid'], self._args['childid'])
+        self.__getbySensorandNode(self._args['nodeid'], self._args['childid'])
         if self._result:
             '''
                 Node + Sensor is known
@@ -186,12 +189,12 @@ class Database():
                 Node + Sensor is unknown
                 check if new sensor or new node
             '''
-            self.__getsingle(self._args['nodeid'], 0)
+            self.__getbySensorandNode(self._args['nodeid'], 0)
             if self._result:
                 '''
                     node is known, sensor 0 is always created
                 '''
-                nid = self._node
+                nid = self._result.node_id
                 self._log.info('adding new sensor')
             else:
                 '''
@@ -213,19 +216,25 @@ class Database():
                                 'Node {1} failed'.format(self._args['childid'],
                                                          nid))
 
-    def get(self, node=False, sensor=0):
-        if node:
-            self.__getsingle(node, sensor)
+    def __internalGet(self, n, s):
+        if n and s:
+            self.__getbySensorandNode(n, s)
+        elif n:
+            self.__getbyNode(n)
+        return
+
+    def get(self, node=False, sensor=False):
+        self.__internalGet(node, sensor)
         return self._result if self._result else self._dbsession.query(Sensor).all()
 
-    def openhab(self, node=False, sensor=0):
-        self.__getsingle(node, sensor)
+    def openhab(self, node=False, sensor=False):
+        self.__internalGet(node, sensor)
         return self._result.openhab if self._result else False
 
-    def sensortype(self, node=False, sensor=0):
-        self.__getsingle(node, sensor)
+    def sensortype(self, node=False, sensor=False):
+        self.__internalGet(node, sensor)
         return self._result.sensor_type if self._result else False
 
-    def comment(self, node=False, sensor=0):
-        self.__getsingle(node, sensor)
+    def comment(self, node=False, sensor=False):
+        self.__internalGet(node, sensor)
         return self._result.comment if self._result else False

@@ -1,19 +1,38 @@
 {% extends "base.html" %}
 {% block content %}
 <h2>Sensor Nodes</h2>
-{% for s in sensors %}
-<div class="col-md-3">
- <div class="panel panel-info">
-  <div class="panel-heading">
-   <h4>Sensor {{ s.node_id }}/{{ s.sensor_id }}</h4>
-  </div>
-  <div class="panel-body">
-   Sensor Type: {{ s.sensor_type }}
-  </div>
-  <div class="panel-footer">
-   Last Seen: {{ s.last_seen | timestamp2date }}
-  </div>
- </div>
+<div class="table-responsive col-md-6 col-md-offset-2">
+    <table class="table table-hover table-striped">
+        <thead>
+            <tr>
+                <th>Node</th>
+                <th></th>
+                <th>Sensor</th>
+                <th></th>
+                <th>Type</th>
+                <th>Last Seen</th>
+            </tr>
+        </thead>
+        <tbody>
+        {% for e in data | sort(attribute='node_id') %}
+            <tr>
+                <td>{{ e.node_id }}</td>
+                <td>
+                    <a href="/detail/{{ e.node_id }}" class="btn btn-info btn-xs">
+                        <span class="glyphicon glyphicon-zoom-in"></span>
+                    </a>
+                </td>
+                <td>{{ e.sensor_id }}</td>
+                <td>
+                    <a href="/detail/{{ e.node_id }}/{{ e.sensor_id }}" class="btn btn-info btn-xs">
+                        <span class="glyphicon glyphicon-zoom-in"></span>
+                    </a>
+                </td>
+                <td>{{ e.sensor_type }}</td>
+                <td>{{ e.last_seen | timestamp2date }}</td>
+            </tr>
+        {% endfor %}
+        </tbody>
+    </table>
 </div>
-{% endfor %}
 {% endblock %}
