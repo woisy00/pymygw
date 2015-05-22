@@ -25,6 +25,7 @@ class Sensor(Base):
     sketch_name = Column(String(60), default=None)
     sketch_version = Column(String(60), default=None)
     last_seen = Column(Integer, default=0)
+    last_value = Column(String(20), default=None)
 
     __table_args__ = (UniqueConstraint('node_id', 'sensor_id'),)
 
@@ -39,7 +40,8 @@ class Sensor(Base):
                            'API Version': self.api_version,
                            'Sketch Version': self.sketch_version,
                            'Sketch Name': self.sketch_name,
-                           'Last Seen': self.last_seen})
+                           'Last Seen': self.last_seen,
+                           'Last Value': self.last_value})
 
 
 class Database():
@@ -133,6 +135,10 @@ class Database():
         if 'sketch_name' in self._args and \
                 self._args['sketch_name'] != self._result.sketch_name:
             self._result.sketch_name = self._args['sketch_name']
+
+        if 'payload' in self._args and \
+                self._args['last_value'] != self._result.last_value:
+            self._result.last_value = self._args['payload']
 
         if self.__commit():
             self._log.debug('Update for {0} '
