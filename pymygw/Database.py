@@ -102,7 +102,6 @@ class Database():
                 self._log.error('SensorType mismatch: DB {0} \n\
                                  Reported Type: {1}'.format(self._result.sensor_type,
                                                             self._args['sensortype']))
-
                 return False
 
         if 'openhab' in self._args and \
