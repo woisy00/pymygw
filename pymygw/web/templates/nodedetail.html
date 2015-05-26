@@ -49,7 +49,11 @@
     </tr>
     <tr>
      <th>Last Seen</th>
-     <td>{{ node.last_seen }}</td>
+     <td>{{ node.last_seen | timestamp2date }}</td>
+    </tr>
+    <tr>
+     <th>Last Value</th>
+     <td>{{ node.last_value }}</td>
     </tr>
    </tbody>
   </table>

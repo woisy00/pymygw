@@ -10,7 +10,9 @@
     <th>Sensor</th>
     <th></th>
     <th>Type</th>
+    <th>Last Value</th>
     <th>Last Seen</th>
+
    </tr>
   </thead>
   <tbody>
@@ -29,6 +31,7 @@
        </a>
       </td>
       <td>{{ e.sensor_type }}</td>
+      <td>{{ e.last_value }}</td>
       <td>{{ e.last_seen | timestamp2date }}</td>
     </tr>
    {% endfor %}
