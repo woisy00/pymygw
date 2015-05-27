@@ -1,6 +1,6 @@
-from sqlalchemy import create_engine, Column, Integer, Float, String, UniqueConstraint
+from sqlalchemy import create_engine, Column, Integer, Float, String, UniqueConstraint, ForeignKey
 from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy.orm import sessionmaker, scoped_session
+from sqlalchemy.orm import sessionmaker, scoped_session, relationship
 from sqlalchemy.orm.exc import NoResultFound
 from sqlalchemy.pool import StaticPool
 import time
@@ -11,38 +11,47 @@ import config
 Base = declarative_base()
 
 
+class Node(Base):
+    __tablename__ = 'node'
+    id = Column(Integer, primary_key=True)
+    node_id = Column(Integer, nullable=False)
+    sketch_name = Column(String(60), default=None)
+    sketch_version = Column(String(60), default=None)
+    api_version = Column(String(20), default=None)
+    battery = Column(Integer, default=0)
+    battery_level = Column(Float, default=0)
+
+    sensors = relationship('Sensor', backref='node')
+
+    def __repr__(self):
+        return json.dumps({'Node': self.node_id,
+                           'Sketch Name': self.sketch_name,
+                           'Sketch Version': self.sketch_version,
+                           'API Version': self.api_version,
+                           'Battery': self.battery,
+                           'Battery Level': self.battery_level})
+
 class Sensor(Base):
     __tablename__ = 'sensor'
     id = Column(Integer, primary_key=True)
-    node_id = Column(Integer, nullable=False)
+    node_id = Column(Integer, ForeignKey('node.node_id'), nullable=False)
     sensor_id = Column(Integer, default=0)
     sensor_type = Column(String(20), default=None)
     openhab = Column(String(90), unique=True, nullable=True)
     comment = Column(String(255))
-    battery = Column(Integer, default=0)
-    battery_level = Column(Float, default=0)
-    api_version = Column(String(20), default=None)
-    sketch_name = Column(String(60), default=None)
-    sketch_version = Column(String(60), default=None)
     last_seen = Column(Integer, default=0)
     last_value = Column(String(20), default=0)
 
     __table_args__ = (UniqueConstraint('node_id', 'sensor_id'),)
 
-    def __str__(self):
+    def __repr__(self):
         return json.dumps({'Node': self.node_id,
                            'Sensor': self.sensor_id,
                            'Type': self.sensor_type,
                            'Openhab': self.openhab,
                            'Comment': self.comment,
-                           'Battery': self.battery,
-                           'Battery Level': self.battery_level,
-                           'API Version': self.api_version,
-                           'Sketch Version': self.sketch_version,
-                           'Sketch Name': self.sketch_name,
                            'Last Seen': self.last_seen,
                            'Last Value': self.last_value})
-
 
 class Database():
     def __init__(self):
