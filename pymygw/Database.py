@@ -31,6 +31,7 @@ class Node(Base):
                            'Battery': self.battery,
                            'Battery Level': self.battery_level})
 
+
 class Sensor(Base):
     __tablename__ = 'sensor'
     id = Column(Integer, primary_key=True)
@@ -52,6 +53,144 @@ class Sensor(Base):
                            'Comment': self.comment,
                            'Last Seen': self.last_seen,
                            'Last Value': self.last_value})
+
+
+class Database2():
+    def __init__(self):
+        self._log = getLogger('pymygw')
+        self._engine = create_engine(config.Database,
+                                     connect_args={'check_same_thread': False},
+                                     poolclass=StaticPool)
+        Base.metadata.create_all(self._engine)
+        Base.metadata.bind = self._engine
+        self._dbsession = scoped_session(sessionmaker(bind=self._engine))
+        self._result = False
+
+    def __commit(self):
+        try:
+            self._dbsession.commit()
+            self._log.debug('Commit successfull')
+            return True
+        except Exception, e:
+            self._log.error('Commit failed! Exception: {0}'.format(e))
+            self._dbsession.rollback()
+            return False
+
+    def __get(self, n, s):
+        if n and s:
+            self.__getSensor(n, s)
+        elif n:
+            self.__getNode(n)
+
+    def __getNode(self, n):
+        try:
+            self._result = self._dbsession.query(Node)\
+                                          .filter(Node.node_id == n)\
+                                          .one()
+        except NoResultFound:
+            self._result = False
+            self._log.debug('No DB entry found for Node: {0}'.format(n))
+
+    def __getSensor(self, n, s):
+        try:
+            self._result = self._dbsession.query(Sensor)\
+                                          .filter(Sensor.node_id == n,
+                                                  Sensor.sensor_id == s)\
+                                          .one()
+        except NoResultFound:
+            self._result = False
+            self._log.debug('No DB entry found for Sensor: {0} on Node: {1}'.format(s, n))
+
+    def __update(self):
+        '''
+            updates the db entrie if needed
+        '''
+        self._result.last_seen = time.time()
+        if 'sensortype' in self._args:
+            '''
+                strip of first two characters
+                could be S_ V_
+                depends on presentation or set/req
+            '''
+            self._args['sensortype'] = self._args['sensortype'].split('_')[1]
+            if not self._result.sensor_type:
+                self._result.sensor_type = self._args['sensortype']
+            if self._args['sensortype'] != self._result.sensor_type:
+                self._log.error('SensorType mismatch: DB {0} \n\
+                                 Reported Type: {1}'.format(self._result.sensor_type,
+                                                            self._args['sensortype']))
+                return False
+
+        if 'openhab' in self._args and \
+                self._args['openhab'] != self._result.openhab:
+            self._log.debug('OpenhabDB entry mismatch: DB {0} \n\
+                             New Openhab: {1}'.format(self._result.openhab,
+                                                      self._args['openhab']))
+            self._result.openhab = self._args['openhab']
+
+        if 'comment' in self._args and \
+                self._args['comment'] != self._result.comment:
+            self._result.comment = self._args['comment']
+
+        if 'battery' in self._args and \
+                self._args['battery'] != self._result.battery:
+            self._result.battery = self._args['battery']
+
+        if 'battery_level' in self._args and \
+                self._args['battery_level'] != self._result.battery_level:
+            self._result.battery_level = self._args['battery_level']
+
+        if 'api_version' in self._args and \
+                self._args['api_version'] != self._result.api_version:
+            self._result.api_version = self._args['api_version']
+
+        if 'sketch_version' in self._args and \
+                self._args['sketch_version'] != self._result.sketch_version:
+            self._result.sketch_version = self._args['sketch_version']
+
+        if 'sketch_name' in self._args and \
+                self._args['sketch_name'] != self._result.sketch_name:
+            self._result.sketch_name = self._args['sketch_name']
+
+        if 'payload' in self._args and \
+                self._args['payload'] != self._result.last_value:
+            self._result.last_value = self._args['payload']
+
+        if self.__commit():
+            self._log.debug('Update for {0} '
+                            'finished successfully'.format(self._result))
+            return True
+        else:
+            self._log.error('Updated failed for {0}'.format(self._result))
+            return False
+
+    def newNodeID(self):
+        '''
+            New sensor node,
+            generate new node id and return it
+        '''
+        lastid = self._dbsession.query(Node.node_id)\
+                                .order_by(Node.node_id.desc())\
+                                .first()
+        self._log.debug('Last DB Node ID: '.format(lastid))
+        if lastid is None:
+            newid = 1
+        else:
+            newid = lastid[0] + 1
+
+        newnode = Node(node_id=newid)
+        self._dbsession.add(newnode)
+        if self.__commit():
+            self._log.debug('New node added to DB: {0}'.format(newnode))
+            return newid
+        else:
+            self._log.error('Adding node failed: {0}'.format(newnode))
+            return False
+
+    def get(self, node=False, sensor=False):
+        self.__get(node, sensor)
+        return self._result if self._result else self._dbsession.query(Node).all()
+
 
 class Database():
     def __init__(self):
