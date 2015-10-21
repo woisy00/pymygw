@@ -9,7 +9,8 @@ a [mysensors](http://www.mysensors.org/) gw based on https://github.com/wbcode/h
 **MySensors Serial Protocol (1.4) support only**
 
 
-[BLOG Post](http://www.the-hawkes.de/pymygw-a-simple-mysensors-gateway.html)
+
+**Outdated** [BLOG Post](http://www.the-hawkes.de/pymygw-a-simple-mysensors-gateway.html)
 
 
 
@@ -39,27 +40,50 @@ config.py
 Publisher = 'MQTT'
 
 '''
-Openhab config
+    Arduino Serial config
+'''
+SerialPort = '/dev/ttyACM0'
+
+
+'''
+    MQTT config
+
+
+    TLS Attention
+    !!!The broker dns name and the CN in the tls cert must be the same!!!
+'''
+MQTTBroker = 'mqtt.home'
+MQTTTLS = True
+MQTTPort = 1883
+MQTTTLSPort = 8883
+MQTTUsername = 'pymygw'
+MQTTPassword = 'pymygw'
+# https://github.com/jpmens/mqttwarn/issues/95
+MQTTProtocol = 3
+MQTTTopic = 'pymygw'
+MQTTCert = 'pymygw.crt'
+MQTTKey = 'pymygw.key'
+MQTTCa = 'ca.crt'
+
+'''
+    Web Config
+    only available if the OpenhabAPI is used
+'''
+WebPort = 5000
+WebDir = 'web'
+
+'''
+    Openhab config
 '''
 OpenhabAPI = 'http://adugw.home:8080/rest/items'
 OpenhabAPIList = 'item'
 OpenhabCacheTimeout = 300
 
-'''
-MQTT config
-'''
-MQTTBroker = 'adugw.home'
-MQTTPort = 1883
-#https://github.com/jpmens/mqttwarn/issues/95
-MQTTProtocol = 3
-MQTTTopic = 'pymygw'
-
-```
 
 ### Start
 ```bash
     cd <<installdirectory>>
-    python pymygw.py
+    python app.py
 ```
 
 ### Webinterface
