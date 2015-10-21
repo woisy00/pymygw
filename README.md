@@ -79,8 +79,10 @@ OpenhabAPI = 'http://adugw.home:8080/rest/items'
 OpenhabAPIList = 'item'
 OpenhabCacheTimeout = 300
 
+```
 
 ### Start
+
 ```bash
     cd <<installdirectory>>
     python app.py
