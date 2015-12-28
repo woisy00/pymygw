@@ -81,27 +81,37 @@ class MQTT(object):
     def __on_log(self, client, userdata, level, msg):
         self._log.debug('MQTT Log: Level: {0}, Message: {1}'.format(level, msg))
 
-    def publish(self, msg):
+    def __publish(self, topic, payload) :
+        result, msgid = self._PublishClient.publish(topic, payload)
+
+        self._log.debug('MQTT Returncode {0}, msgid {1}'.format(result, msgid))
+        if result == 0:
+            self._log.info('MQTT Publish successfully: {0} value: {1}'.format(topic, payload))
+                                                                                    
+        else:
+            self._log.error('MQTT Publish failed: {0} value: {1}'.format(topic, payload))
+
+    def publish(self, msg, info = None):
+    
         self._data = tools.checkKeys(msg, ('nodeid', 'childid', 'payload'))
         if self._data and self.connected:
-            self._log.debug('Try to publish values to the MQTT Brocker on {0}: {1}'.format(config.MQTTBroker,
+            self._log.debug('Try to publish values to the MQTT Broker on {0}: {1}'.format(config.MQTTBroker,
                                                                                            msg))
-            topic = '/{0}/{1}/{2}'.format(config.MQTTTopic,
-                                          self._data['nodeid'],
-                                          self._data['childid'])
-            result, msgid = self._PublishClient.publish(topic, self._data['payload'])
-
-            self._log.debug('MQTT Returncode {0}, msgid {1}'.format(result, msgid))
-            if result == 0:
-                self._log.info('MQTT Publish successfully: /{0}/{1}/{2}, value: {3}'.format(config.MQTTTopic,
-                                                                                            self._data['nodeid'],
-                                                                                            self._data['childid'],
-                                                                                            self._data['payload']))
-            else:
-                self._log.error('MQTT Publish failed: /{0}/{1}/{2}, value: {3}'.format(config.MQTTTopic,
-                                                                                       self._data['nodeid'],
-                                                                                       self._data['childid'],
-                                                                                       self._data['payload']))
-
+            topic = "/" + config.MQTTTopic
+            try:
+                topic = topic.replace(
+                    '%nodeid', self._data['nodeid']).replace(
+                    '%childid', self._data['childid']).replace(
+                    '%sensorid', self._data['childid'])
+               
+                if not (info is None):
+                    topic=topic.replace(
+                        '%childdescription', info.description).replace(
+                        '%sensordescription', info.description)
+           
+                self.__publish(topic, self._data['payload'])
+            except Exception, e:
+             self._log.error('MQTT Publish failed: Failed to create topic');
+        
     def disconnect(self):
         self._PublishClient.disconnect()

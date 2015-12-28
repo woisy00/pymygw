@@ -9,7 +9,7 @@ Publisher = 'MQTT'
 '''
     Arduino Serial config
 '''
-SerialPort = '/dev/ttyACM0'
+SerialPort = '/dev/ttyUSB0'
 SerialBaud = 115200
 SerialTimeOut = 1
 
@@ -27,15 +27,19 @@ EOL = '\n'
     TLS Attention
     !!!The broker dns name and the CN in the tls cert must be the same!!!
 '''
-MQTTBroker = 'mqtt.home'
-MQTTTLS = True
+MQTTBroker = '192.168.0.3'
+#MQTTTLS = True
+MQTTTLS = False
 MQTTPort = 1883
 MQTTTLSPort = 8883
-MQTTUsername = 'pymygw'
-MQTTPassword = 'pymygw'
+#MQTTUsername = 'pymygw'
+#MQTTPassword = 'pymygw'
+MQTTUsername = None
+MQTTPassword = None
 # https://github.com/jpmens/mqttwarn/issues/95
 MQTTProtocol = 3
-MQTTTopic = 'pymygw'
+#MQTTTopic = 'pymygw/%nodeid/%childid'
+MQTTTopic = 'pymygw/%childdescription'
 MQTTCert = 'pymygw.crt'
 MQTTKey = 'pymygw.key'
 MQTTCa = 'ca.crt'
@@ -50,7 +54,7 @@ WebDir = 'web'
 '''
     Openhab config
 '''
-OpenhabAPI = 'http://adugw.home:8080/rest/items'
+OpenhabAPI = 'http://192.168.0.3:8081/rest/items'
 OpenhabAPIList = 'item'
 OpenhabCacheTimeout = 300
 

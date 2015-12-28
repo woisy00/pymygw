@@ -53,7 +53,7 @@ class MySensor():
     def message(self, m):
         self._cmd = None
         self._message = m
-        self._db = Database.Database()
+        self._db = Database.Database2()
         self._log.debug('Parsed Message:\n\
                          \tNodeID: {0},\n\
                          \tChildID: {1},\n\
@@ -95,8 +95,13 @@ class MySensorPresentation(MySensor):
     def process(self):
         self._message['sensortype'] = self.name(self._message['subtype'])
         self._message['comment'] = self.comment(self.name(self._message['subtype']))
-        self._message['api_version'] = self._message['payload']
+        self._message['description'] = self._message['payload']
+        # When it is a presentation message, 
+        # we don't need to update the latest value
+        del (self._message['payload'])
         self._log.debug('Message in presentation: {0}'.format(self._message))
+        
+
         self._db.process(self._message)
 
 
@@ -117,7 +122,8 @@ class MySensorSetReq(MySensor):
         self._message['sensortype'] = self.name(self._message['subtype'])
         self._log.debug('Message in set: {0}'.format(self._message))
         self._db.process(self._message)
-        self._publisher.publish(self._message)
+        db_info = self._db.get(node = self._message['nodeid'], sensor=self._message['childid'])
+        self._publisher.publish(self._message, info = db_info)
 
 
 class MySensorInternal(MySensor):
@@ -172,7 +178,7 @@ class MySensorInternal(MySensor):
             create new id for unknown nodes
             and send it as ID_RESPONSE
         '''
-        newID = self._db.newID()
+        newID = self._db.newNodeID()
         self._log.debug("new id {0}".format(newID))
         if newID:
             self._cmd = {'nodeid': 255,

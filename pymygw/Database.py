@@ -40,6 +40,7 @@ class Sensor(Base):
     sensor_type = Column(String(20), default=None)
     openhab = Column(String(90), unique=True, nullable=True)
     comment = Column(String(255))
+    description = Column(String(255))
     last_seen = Column(Integer, default=0)
     last_value = Column(String(20), default=0)
 
@@ -51,9 +52,88 @@ class Sensor(Base):
                            'Type': self.sensor_type,
                            'Openhab': self.openhab,
                            'Comment': self.comment,
+                           'Description': self.description,
                            'Last Seen': self.last_seen,
                            'Last Value': self.last_value})
 
+
+class NodeProcessor:
+    def __init__(self, node):
+        self._node = node
+
+    def process(self, msg):
+        '''
+            updates the db entry if needed
+        '''
+
+        self._args = msg
+        if 'battery' in self._args and \
+                self._args['battery'] != self._node.battery:
+            self._node.battery = self._args['battery']
+
+        if 'battery_level' in self._args and \
+                self._args['battery_level'] != self._node.battery_level:
+            self._node.battery_level = self._args['battery_level']
+
+        if 'api_version' in self._args and \
+                self._args['api_version'] != self._node.api_version:
+            self._node.api_version = self._args['api_version']
+
+        if 'sketch_version' in self._args and \
+                self._args['sketch_version'] != self._node.sketch_version:
+            self._node.sketch_version = self._args['sketch_version']
+
+        if 'sketch_name' in self._args and \
+                self._args['sketch_name'] != self._node.sketch_name:
+            self._node.sketch_name = self._args['sketch_name']
+
+
+class SensorProcessor:
+    def __init__(self, sensor):
+        self._sensor = sensor
+
+    def process(self, msg):
+        '''
+            updates the db entry if needed
+        '''
+        self._args = msg
+        self.last_seen = time.time()
+        if 'sensortype' in self._args:
+            '''
+                strip of first two characters
+                could be S_ V_
+                depends on presentation or set/req
+            '''
+            self._args['sensortype'] = self._args['sensortype'].split('_')[1]
+            if not self._sensor.sensor_type:
+                self._sensor.sensor_type = self._args['sensortype']
+            if self._args['sensortype'] != self._sensor.sensor_type:
+                self._log.error('SensorType mismatch: DB {0} \n\
+                                 Reported Type: {1}'.format(self._sensor.sensor_type,
+                                                            self._args['sensortype']))
+                return False
+
+        if 'openhab' in self._args and \
+                self._args['openhab'] != self._sensor.openhab:
+            self._log.debug('OpenhabDB entry mismatch: DB {0} \n\
+                             New Openhab: {1}'.format(self._sensor.openhab,
+                                                      self._args['openhab']))
+            self._sensor.openhab = self._args['openhab']
+
+        if 'comment' in self._args and \
+                self._args['comment'] != self._sensor.comment:
+            self._sensor.comment = self._args['comment']
+
+        if 'description' in self._args and \
+                self._args['description'] != self._sensor.description:
+            self._sensor.description = self._args['description']
+
+
+        if 'payload' in self._args and \
+                self._args['payload'] != self._sensor.last_value:
+            self._sensor.last_value = self._args['payload']
+
+       
 
 class Database2():
     def __init__(self):
@@ -83,13 +163,15 @@ class Database2():
             self.__getNode(n)
 
     def __getNode(self, n):
+        self._result = False
         try:
             self._result = self._dbsession.query(Node)\
                                           .filter(Node.node_id == n)\
                                           .one()
         except NoResultFound:
-            self._result = False
             self._log.debug('No DB entry found for Node: {0}'.format(n))
+        except Exception,e:
+            self._log.debug('unknown error when quering for node {}: {}'.format(n, e))
 
     def __getSensor(self, n, s):
         try:
@@ -100,10 +182,12 @@ class Database2():
         except NoResultFound:
             self._result = False
             self._log.debug('No DB entry found for Sensor: {0} on Node: {1}'.format(s, n))
+        except Exception,e:
+            self._log.debug('unknown error when quering for node {}: {}'.format(n, e))
 
     def __update(self):
         '''
-            updates the db entrie if needed
+            updates the db entry if needed
         '''
         self._result.last_seen = time.time()
         if 'sensortype' in self._args:
@@ -164,6 +248,34 @@ class Database2():
             self._log.error('Updated failed for {0}'.format(self._result))
             return False
 
+    def process(self, msg):
+        nodeid = msg['nodeid']
+        processor = None
+        if int(msg['childid']) == 255:
+            # node, no sensor
+            db_item = self.get(node = nodeid)
+            if type(db_item) is list:
+                db_item = db_item[0]
+            if not(db_item):
+                db_item = Node(node_id=nodeid)
+                self._dbsession.add(db_item)
+            processor = NodeProcessor(db_item)
+        else:
+            # node and sensor
+            db_item = self.get(node = nodeid, sensor = msg['childid'])
+            if type(db_item) is list:
+                db_item = db_item[0]
+            if not(db_item): 
+                db_item = Sensor(node_id=nodeid,
+                               sensor_id=msg['childid'],
+                               last_seen=time.time())
+                self._dbsession.add(db_item)
+            processor = SensorProcessor(db_item)
+        processor.process(msg);
+        self.__commit()
+
+
+
     def newNodeID(self):
         '''
             New sensor node,
@@ -189,7 +301,7 @@ class Database2():
 
     def get(self, node=False, sensor=False):
         self.__get(node, sensor)
-        return self._result if self._result else self._dbsession.query(Node).all()
+        return self._result;# if self._result else self._dbsession.query(Node).all()
 
 
 class Database():
@@ -234,7 +346,7 @@ class Database():
 
     def __update(self):
         '''
-            updates the db entrie if needed
+            updates the db entry if needed
         '''
         self._result.last_seen = time.time()
         if 'sensortype' in self._args:
