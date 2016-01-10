@@ -38,6 +38,16 @@ MQTTUsername = None
 MQTTPassword = None
 # https://github.com/jpmens/mqttwarn/issues/95
 MQTTProtocol = 3
+
+'''
+    MQTTTopic:
+    
+        Old behaviour is 'pymygw/%nodeid/%childid'
+        Known substitions: 
+            * %nodeid: replaced by the node ID assigned
+            * %sensorid: replaced by the sensorID assigned by the node
+            * %childdescription: Description as announced by the sensor.
+'''
 #MQTTTopic = 'pymygw/%nodeid/%childid'
 MQTTTopic = 'pymygw/%childdescription'
 MQTTCert = 'pymygw.crt'
