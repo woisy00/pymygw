@@ -6,13 +6,17 @@ a [mysensors](http://www.mysensors.org/) gw based on https://github.com/wbcode/h
 - MQTT Support
 - Openhab Rest Api Support
 
-**MySensors Serial Protocol (1.4) support only**
+~~**MySensors Serial Protocol (1.4) support only**~~
+  
+@vincentdm added v1.5 support
 
+     
+*****
+     
 
-
+ 
+ 
 **Outdated** [BLOG Post](http://www.the-hawkes.de/pymygw-a-simple-mysensors-gateway.html)
-
-
 
 ### Requirements
 
