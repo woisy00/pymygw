@@ -7,15 +7,22 @@ a [mysensors](http://www.mysensors.org/) gw based on https://github.com/wbcode/h
 - Openhab Rest Api Support
 
 ~~**MySensors Serial Protocol (1.4) support only**~~
-  
-@vincentdm added v1.5 support
 
-     
+Special thanks to
+
+- [vincentdm](https://github.com/vincentdm)
+- [meyerd](https://github.com/meyerd)
+
+for adding v1.5 Serial API Support
+
+
+
+
 *****
-     
 
- 
- 
+
+
+
 **Outdated** [BLOG Post](http://www.the-hawkes.de/pymygw-a-simple-mysensors-gateway.html)
 
 ### Requirements
