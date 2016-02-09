@@ -53,6 +53,6 @@ if __name__ == "__main__":
     serialGW = Gateway(publisher)
     serialGW.daemon = True
     serialGW.start()
-    app.run(host='0.0.0.0')
+    app.run(host='0.0.0.0', port=config.WebPort)
 
 

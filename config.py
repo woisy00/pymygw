@@ -75,7 +75,7 @@ OpenhabCacheTimeout = 300
 Database = 'sqlite:///pymygw.db'
 
 '''
-    MySensor Serial Protocol Definition v1.4
+    MySensor Serial Protocol Definition v1.5
     http://www.mysensors.org/build/serial_api
 
 '''
@@ -100,6 +100,7 @@ MySensorPresentation = {
     'S_MOTION': {'id': 1, 'comment': 'Motion sensors'},
     'S_SMOKE': {'id': 2, 'comment': 'Smoke sensor'},
     'S_LIGHT': {'id': 3, 'comment': 'Light Actuator (on/off)'},
+    'S_BINARY': {'id': 3, 'comment': 'Binary Light or Relay (same as S_LIGHT)'},
     'S_DIMMER': {'id': 4, 'comment': 'Dimmable device of some kind'},
     'S_COVER': {'id': 5, 'comment': 'Window covers or shades'},
     'S_TEMP': {'id': 6, 'comment': 'Temperature sensor'},
@@ -114,7 +115,7 @@ MySensorPresentation = {
     'S_DISTANCE': {'id': 15, 'comment': 'Distance sensor'},
     'S_LIGHT_LEVEL': {'id': 16, 'comment': 'Light sensor'},
     'S_ARDUINO_NODE': {'id': 17, 'comment': 'Arduino node device'},
-    'S_ARDUINO_RELAY': {'id': 18, 'comment': 'Arduino repeating node device'},
+    'S_ARDUINO_REPEATER_NODE': {'id': 18, 'comment': 'Arduino repeating node device'},
     'S_LOCK': {'id': 19, 'comment': 'Lock device'},
     'S_IR': {'id': 20, 'comment': 'Ir sender/receiver device'},
     'S_WATER': {'id': 21, 'comment': 'Water meter'},
@@ -122,12 +123,24 @@ MySensorPresentation = {
     'S_CUSTOM': {'id': 23, 'comment': 'Use this for custom sensors where no other fits.'},
     'S_DUST': {'id': 24, 'comment': 'Dust level sensor'},
     'S_SCENE_CONTROLLER': {'id': 25, 'comment': 'Scene controller device'},
+    'S_RGB_LIGHT': {'id': 26, 'comment': 'RGB light. Send color component data using V_RGB. Also supports V_WATT'},
+    'S_RGBW_LIGHT': {'id': 27, 'comment': 'RGB light with an additional White component. Send data using V_RGBW. Also supports V_WATT'},
+    'S_COLOR_SENSOR': {'id': 28, 'comment': 'Color sensor, send color information using V_RGB'},
+    'S_HVAC': {'id': 29, 'comment': 'Thermostat/HVAC device. V_HVAC_SETPOINT_HEAT, V_HVAC_SETPOINT_COLD, V_HVAC_FLOW_STATE, V_HVAC_FLOW_MODE, V_TEMP'},
+    'S_MULTIMETER': {'id': 30, 'comment': 'Multimeter device, V_VOLTAGE, V_CURRENT, V_IMPEDANCE'},
+    'S_SPRINKLER': {'id': 31, 'comment': 'Sprinkler, V_STATUS (turn on/off), V_TRIPPED (if fire detecting device)'},
+    'S_WATER_LEAK': {'id': 32, 'comment': 'Water leak sensor, V_TRIPPED, V_ARMED'},
+    'S_SOUND': {'id': 33, 'comment': 'Sound sensor, V_TRIPPED, V_ARMED, V_LEVEL (sound level in dB)'},
+    'S_VIBRATION': {'id': 34, 'comment': 'Vibration sensor, V_TRIPPED, V_ARMED, V_LEVEL (vibration in Hz)'},
+    'S_MOISTURE': {'id': 35, 'comment': 'Moisture sensor, V_TRIPPED, V_ARMED, V_LEVEL (water content or moisture in percentage?)'},
 }
 
 MySensorSetReq = {
     'V_TEMP': {'id': 0, 'comment': 'Temperature'},
     'V_HUM': {'id': 1, 'comment': 'Humidity'},
+    'V_STATUS': {'id': 2, 'comment': 'S_LIGHT, S_DIMMER, S_SPRINKLER, S_HVAC, S_HEATER. Used for setting/reporting binary (on/off) status. 1=on, 0=off'},
     'V_LIGHT': {'id': 2, 'comment': 'Light status. 0=off 1=on'},
+    'V_PERCENTAGE': {'id': 3, 'comment': 'S_DIMMER. Used for sending a percentage value 0-100 (%).'},
     'V_DIMMER': {'id': 3, 'comment': 'Dimmer value. 0-100%'},
     'V_PRESSURE': {'id': 4, 'comment': 'Atmospheric Pressure'},
     'V_FORECAST': {'id': 5, 'comment': 'Whether forecast. One of stable, sunny, cloudy, unstable, thunderstorm or unknown'},
@@ -165,6 +178,13 @@ MySensorSetReq = {
     'V_DUST_LEVEL': {'id': 37, 'comment': 'Dust level'},
     'V_VOLTAGE': {'id': 38, 'comment': 'Voltage level'},
     'V_CURRENT': {'id': 39, 'comment': 'Current level'},
+    'V_RGB': {'id': 40, 'comment': 'S_RGB_LIGHT, S_COLOR_SENSOR. Used for sending color information for multi color LED lighting or color sensors. Sent as ASCII hex: RRGGBB (RR=red, GG=green, BB=blue component)'},
+    'V_RGBW': {'id': 41, 'comment': 'S_RGBW_LIGHT Used for sending color information to multi color LED lighting. Sent as ASCII hex: RRGGBBWW (WW=white component)'},
+    'V_ID': {'id': 42, 'comment': 'S_TEMP Used for sending in sensors hardware ids (i.e. OneWire DS1820b).'},
+    'V_UNIT_PREFIX': {'id': 43, 'comment': 'S_DUST, S_AIR_QUALITY Allows sensors to send in a string representing the unit prefix to be displayed in GUI, not parsed by controller! E.g. cm, m, km, inch. Can be used for S_DISTANCE or gas concentration'},
+    'V_HVAC_SETPOINT_COOL': {'id': 44, 'comment': 'S_HVAC. HVAC cool setpoint (Integer between 0-100)'},
+    'V_HVAC_SETPOINT_HEAT': {'id': 45, 'comment': 'S_HEATER, S_HVAC. HVAC/Heater setpoint (Integer between 0-100)'},
+    'V_HVAC_FLOW_MODE': {'id': 46, 'comment': 'S_HVAC. Flow mode for HVAC ("Auto", "ContinuousOn", "PeriodicOn")'},
 }
 
 MySensorInternal = {
@@ -183,4 +203,7 @@ MySensorInternal = {
     'I_SKETCH_VERSION': {'id': 12, 'comment': 'Optional sketch version that can be reported to keep track of the version of sensor in the Controller GUI.'},
     'I_REBOOT': {'id': 13, 'comment': 'Used by OTA firmware updates. Request for node to reboot.'},
     'I_GATEWAY_READY': {'id': 14, 'comment': 'Send by gateway to controller when startup is complete.'},
+    'I_REQUEST_SIGNING': {'id': 15, 'comment': 'Signing request'},
+    'I_GET_NONCE': {'id': 16, 'comment': 'Request a nonce'},
+    'I_GET_NONCE_RESPONSE': {'id': 17, 'comment': 'Reply with a nonce'},
 }
