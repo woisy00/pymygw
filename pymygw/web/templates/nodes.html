@@ -1,0 +1,44 @@
+{% extends "base.html" %}
+{% block content %}
+<h2>Nodes, <a href="/">Sensors</a>, <a href="/firmware">Firmware</a></h2>
+<div class="table-responsive col-md-12">
+    <table class="table table-hover table-condensed">
+        <thead>
+            <tr>
+                <th>Node ID</th>
+                <th>Node Name</th>
+                <th>Battery Level</th>
+                <th>Sketch</th>
+                <th>Firmware</th>
+                <th></th>                
+            </tr>
+        </thead>
+        <tbody>
+            {% for n in nodes | sort(attribute='node_id') %}
+            <tr>
+                <td>{{ n.node_id }}</td>
+                <td>{{ n.name }}</td>
+                <td>{{ n.battery }}</td>
+                <td>{{ n.sketch_name }} ({{ n.sketch_version }})</td>
+                {% if n.firmware is not none %}
+                <td>{{ n.firmware.type.name }} ({{n.firmware.version}})</td>
+                {% else %}
+                <td>None</td>
+                {% endif %}
+                <td>
+                    <a href="/node/{{ n.node_id }}" class="btn btn-info btn-xs">
+                        <span class="glyphicon glyphicon-zoom-in"></span>
+                    </a>
+                    <a href="/delete/node/{{ n.node_id }}" class="btn btn-info btn-xs">
+                        <span class="glyphicon glyphicon-trash"></span>
+                    </a>
+                    <a href="/reboot/node/{{ n.node_id }}" class="btn btn-info btn-xs">
+                        <span class="glyphicon glyphicon-repeat"></span>
+                    </a>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endblock %}

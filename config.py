@@ -1,15 +1,14 @@
 '''
     Generic config
 '''
-DEBUG = True
+DEBUG = False
 LogFile = 'pymygw.log'
-# MQTT or Openhab
-Publisher = 'MQTT'
+FirmwareDir = '/opt/pymygw/firmwares'
 
 '''
     Arduino Serial config
 '''
-SerialPort = '/dev/ttyUSB0'
+SerialPort = '/dev/mysensors'
 SerialBaud = 115200
 SerialTimeOut = 1
 
@@ -27,7 +26,7 @@ EOL = '\n'
     TLS Attention
     !!!The broker dns name and the CN in the tls cert must be the same!!!
 '''
-MQTTBroker = '192.168.0.3'
+MQTTBroker = '127.0.0.1' #192.168.0.3'
 #MQTTTLS = True
 MQTTTLS = False
 MQTTPort = 1883
@@ -48,8 +47,9 @@ MQTTProtocol = 3
             * %sensorid: replaced by the sensorID assigned by the node
             * %childdescription: Description as announced by the sensor.
 '''
-#MQTTTopic = 'pymygw/%nodeid/%childid'
-MQTTTopic = 'pymygw/%childdescription'
+MQTTTopic = 'mysensors/%nodeid/%childid'
+InternalTopic = 'mysensors/%nodeid/%type'
+#MQTTTopic = 'pymygw/%childdescription'
 MQTTCert = 'pymygw.crt'
 MQTTKey = 'pymygw.key'
 MQTTCa = 'ca.crt'
@@ -60,14 +60,6 @@ MQTTCa = 'ca.crt'
 '''
 WebPort = 5000
 WebDir = 'web'
-
-'''
-    Openhab config
-'''
-OpenhabAPI = 'http://192.168.0.3:8081/rest/items'
-OpenhabAPIList = 'item'
-OpenhabCacheTimeout = 300
-
 
 '''
     Database
@@ -206,4 +198,13 @@ MySensorInternal = {
     'I_REQUEST_SIGNING': {'id': 15, 'comment': 'Signing request'},
     'I_GET_NONCE': {'id': 16, 'comment': 'Request a nonce'},
     'I_GET_NONCE_RESPONSE': {'id': 17, 'comment': 'Reply with a nonce'},
+}
+
+MySensorStream = {
+    'ST_FIRMWARE_CONFIG_REQUEST': {'id': 0, 'comment': 'Request firmware config.'},
+    'ST_FIRMWARE_CONFIG_RESPONSE': {'id': 1, 'comment': 'Response to firmware config request.'},
+    'ST_FIRMWARE_REQUEST': {'id': 2, 'comment': 'Request firmware block.'},
+    'ST_FIRMWARE_RESPONSE': {'id': 3, 'comment': 'Response with firmware block.'},
+    'ST_SOUND': {'id': 4, 'comment': 'Play sound?'},
+    'ST_IMAGE': {'id': 5, 'comment': 'Image from camera?'},
 }

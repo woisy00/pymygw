@@ -1,41 +1,32 @@
 {% extends "base.html" %}
 {% block content %}
-<h2>Sensor Nodes</h2>
-<div class="table-responsive col-md-6 col-md-offset-2">
- <table class="table table-hover table-striped">
-  <thead>
-   <tr>
-    <th>Node</th>
-    <th></th>
-    <th>Sensor</th>
-    <th></th>
-    <th>Type</th>
-    <th>Last Value</th>
-    <th>Last Seen</th>
-
-   </tr>
-  </thead>
-  <tbody>
-   {% for e in data | sort(attribute='node_id') %}
-    <tr>
-      <td>{{ e.node_id }}</td>
-      <td>
-       <a href="/detail/{{ e.node_id }}" class="btn btn-info btn-xs">
-        <span class="glyphicon glyphicon-zoom-in"></span>
-       </a>
-      </td>
-      <td>{{ e.sensor_id }}</td>
-      <td>
-       <a href="/detail/{{ e.node_id }}/{{ e.sensor_id }}" class="btn btn-info btn-xs">
-        <span class="glyphicon glyphicon-zoom-in"></span>
-       </a>
-      </td>
-      <td>{{ e.sensor_type }}</td>
-      <td>{{ e.last_value }}</td>
-      <td>{{ e.last_seen | timestamp2date }}</td>
-    </tr>
-   {% endfor %}
-  </tbody>
- </table>
+<h2><a href="/nodes">Nodes</a>, Sensors, <a href="/firmware">Firmware</a></h2>
+<div class="table-responsive col-md-12">
+    <table class="table table-hover table-striped">
+        <thead>
+            <tr>
+                <th>Node</th>
+                <th>Sensor</th>
+                <th>Type</th>
+                <th>Last Value</th>
+                <th>Last Seen</th>
+            </tr>
+        </thead>
+        <tbody>
+        {% for e in data %}
+            <tr>
+            {% if e.node.name is not none %}
+                <td>{{ e.node.name }} ({{e.node_id}})</td>
+            {% else %}
+                <td>{{ e.node_id }}</td>
+            {% endif %}      
+                <td>{{ e.sensor_id }}</td>
+                <td>{{ e.sensor_type }}</td>
+                <td>{{ e.last_value }}</td>
+                <td>{{ e.last_seen | timestamp2date }}</td>
+            </tr>
+        {% endfor %}
+        </tbody>
+    </table>
 </div>
 {% endblock %}

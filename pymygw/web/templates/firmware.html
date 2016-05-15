@@ -1,0 +1,51 @@
+{% extends "base.html" %}
+{% block content %}
+<h2><a href="/nodes">Nodes</a>, <a href="/">Sensors</a>, Firmware</h2>
+<table class="table table-hover">
+  <tr >
+    <td>
+      <div class="table-responsive col-md-12">
+       <table class="table table-hover table-condensed">
+        <thead>
+         <tr>
+          <th>Name</th>
+          <th>Version</th>
+          <th>Blocks</th>
+          <th>CRC</th>
+         </tr>
+        </thead>
+        <tbody>
+         {% for e in data %}
+          <tr>
+            <td>{{ e.type.name }}</td>
+            <td>{{ e.version }}</td>
+            <td>{{ e.blocks }}</td>
+            <td>{{ e.crc }}</td>
+          </tr>
+         {% endfor %}
+        </tbody>
+       </table>
+      </div>
+    </td>
+  </tr>
+  <tr>
+    <td>
+      <div class="table-responsive col-md-12">
+        <form enctype="multipart/form-data" method="post">
+          <table class="table-hover table-condensed">
+            <tr>
+              <td>Name:</td>
+              <td><input type="text" name="name"/></td>
+              <td>Version:</td>
+              <td><input type="text" name="version" /></td>
+              <td>File:</td>
+              <td><input type="file" name="firmware" /></td>
+              <td><input type="submit" value="Add" /></td>
+            </tr>
+          </table>
+        </form>
+      </div>
+    </td>
+  </tr>
+</table>
+{% endblock %}

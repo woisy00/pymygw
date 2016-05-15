@@ -15,11 +15,12 @@ class Gateway(Thread):
         '''
             Init MySensor Objects
         '''
-        self._MySensorInternal = MySensor.MySensorInternal()
+        self._MySensorInternal = MySensor.MySensorInternal(publisher)
         self._MySensorMessagetype = MySensor.MySensorMessageType()
         self._MySensorPresentation = MySensor.MySensorPresentation()
         self._MySensorSetReq = MySensor.MySensorSetReq(publisher)
-
+        self._MySensorStream = MySensor.MySensorStream(publisher)
+        
         self._serialPort = config.SerialPort
         self._serialBaud = config.SerialBaud
         self._serialTimeOut = config.SerialTimeOut
@@ -47,7 +48,7 @@ class Gateway(Thread):
                 continue
             if self.response:
                 self.response = self.response.rstrip(config.EOL)
-                self._log.info('incoming message: {0}'.format(self.response))
+                self._log.debug('incoming message: {0}'.format(self.response))
                 self.__parseIncoming()
 
     def stop(self):
@@ -83,8 +84,11 @@ class Gateway(Thread):
                 self._processedby = self._MySensorSetReq
             elif self.__toInt(m) == self._MySensorMessagetype.id('INTERNAL'):
                 self._processedby = self._MySensorInternal
+            elif self.__toInt(m) == self._MySensorMessagetype.id('STREAM'):
+                self._processedby = self._MySensorStream
             else:
                 self._log.debug('Skipping {0}: unknown messagetype'.format(self._incomingMessage))
+                return
 
             '''
                 skip gateway
@@ -161,4 +165,4 @@ class Gateway(Thread):
         self.__prepareCommand()
         if self._serialIsConnected and self._serialIsWriteable:
             self._serialConnection.write(self._serialcmd)
-            self._log.info('command send: {0}'.format(self._serialcmd))
+            self._log.debug('command send: {0}'.format(self._serialcmd))

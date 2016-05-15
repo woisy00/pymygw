@@ -91,27 +91,52 @@ class MQTT(object):
         else:
             self._log.error('MQTT Publish failed: {0} value: {1}'.format(topic, payload))
 
-    def publish(self, msg, info = None):
-    
+    def publishSensorValue(self, msg, sensor):
         self._data = tools.checkKeys(msg, ('nodeid', 'childid', 'payload'))
         if self._data and self.connected:
             self._log.debug('Try to publish values to the MQTT Broker on {0}: {1}'.format(config.MQTTBroker,
                                                                                            msg))
             topic = "/" + config.MQTTTopic
+
             try:
                 topic = topic.replace(
                     '%nodeid', self._data['nodeid']).replace(
                     '%childid', self._data['childid']).replace(
-                    '%sensorid', self._data['childid'])
-               
-                if not (info is None):
-                    topic=topic.replace(
-                        '%childdescription', info.description).replace(
-                        '%sensordescription', info.description)
-           
+                    '%sensorid', self._data['childid']).replace(
+                    '%type', msg['sensortype'])
+					
+                if not (sensor.name is None):
+                    topic = topic.replace('%sensor_name', sensor.name)
+                
+                if not (sensor.node.name is None):
+                    topic = topic.replace('%node_name', sensor.node.name)
+
+                self._log.debug('Publishing to topic: {0}'.format(topic)) 
                 self.__publish(topic, self._data['payload'])
             except Exception, e:
-             self._log.error('MQTT Publish failed: Failed to create topic');
-        
+             self._log.error('MQTT Publish failed: Failed to create topic')
+             self._log.error(e, exc_info=True)
+             
+    def publishInternalValue(self, msg, node):
+        self._data = tools.checkKeys(msg, ('nodeid', 'childid', 'payload'))
+        if self._data and self.connected:
+            self._log.debug('Try to publish values to the MQTT Broker on {0}: {1}'.format(config.MQTTBroker,
+                                                                                           msg))
+            topic = "/" + config.InternalTopic
+
+            try:
+                topic = topic.replace(
+                    '%nodeid', self._data['nodeid']).replace(
+                    '%type', msg['sensortype'])
+					
+                if not (node.name is None):
+                    topic = topic.replace('%node_name', node.name)
+
+                self._log.debug('Publishing to topic: {0}'.format(topic)) 
+                self.__publish(topic, self._data['payload'])
+            except Exception, e:
+             self._log.error('MQTT Publish failed: Failed to create topic')
+             self._log.error(e, exc_info=True)
+    
     def disconnect(self):
         self._PublishClient.disconnect()

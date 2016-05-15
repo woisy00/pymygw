@@ -1,62 +1,73 @@
 {% extends "base.html" %}
 {% block content %}
-{% for node in data %}
- <div class="col-md-3 table-responsive">
-  <table class="table table-hover table-striped table-bordered">
-   <caption class="bg-primary">
-       <h4 style="padding-left: 15px">Details<br>Node {{ node.node_id }} Sensor {{ node.sensor_id }}</h4>
-   </caption>
-   <tbody>
-    <tr>
-     <th>Node ID</th>
-     <td>{{ node.node_id }}</td>
-    </tr>
-    <tr>
-     <th>Sensor ID</th>
-     <td>{{ node.sensor_id }}</td>
-    </tr>
-    <tr>
-     <th>Sensor Type</th>
-     <td>{{ node.sensor_type }}</td>
-    </tr>
-    <tr>
-     <th>Openhab Item</th>
-     <td>{{ node.openhab }}</td>
-    </tr>
-    <tr>
-     <th>Comment</th>
-     <td>{{ node.comment }}</td>
-    </tr>
-    <tr>
-     <th>Battery</th>
-     <td>{{ node.battery }}</td>
-    </tr>
-    <tr>
-     <th>Battery Level</th>
-     <td>{{ node.battery_level }}</td>
-    </tr>
-    <tr>
-     <th>API Version</th>
-     <td>{{ node.api_version }}</td>
-    </tr>
-    <tr>
-     <th>Sketch Name</th>
-     <td>{{ node.sketch_name }}</td>
-    </tr>
-    <tr>
-     <th>Sketch Version</th>
-     <td>{{ node.sketch_version }}</td>
-    </tr>
-    <tr>
-     <th>Last Seen</th>
-     <td>{{ node.last_seen | timestamp2date }}</td>
-    </tr>
-    <tr>
-     <th>Last Value</th>
-     <td>{{ node.last_value }}</td>
-    </tr>
-   </tbody>
-  </table>
+ <div class="table-responsive">
+    <form id="node_form" method="POST">
+        <table class="table table-hover table-striped table-bordered">
+            <caption class="bg-primary">
+                <table>
+                    <tr>
+                        <td style="width: 100%">
+                            <h4 style="padding-left: 15px">Node: {{ node.node_id }}</h4>
+                        </td>
+                        <td style="padding-right: 5px">
+                            <a href="/nodes" class="btn btn-info btn-xs">
+                                <span class="glyphicon glyphicon-home"></span>
+                            </a>
+                        </td>
+                        <td style="padding-right: 15px">
+                            <a onclick="javascript: document.forms['node_form'].submit(); return false;" class="btn btn-info btn-xs">
+                                <span class="glyphicon glyphicon-save"></span>
+                            </a>
+                        </td>
+                    </tr>
+                </table>
+            </caption>
+            <tbody>
+                <tr>
+                    <th>Node ID</th>
+                    <td>{{ node.node_id }}</td>
+                </tr>
+                <tr>
+                    <th>Name</th>
+                    <td><input type="text" name="node_name" value="{{ node.name }}" /></td>
+                </tr>
+                <tr>
+                    <th>Battery</th>
+                    <td>{{ node.battery }}</td>
+                </tr>
+                <tr>
+                    <th>Battery Level</th>
+                    <td>{{ node.battery_level }}</td>
+                </tr>
+                <tr>
+                    <th>API Version</th>
+                    <td>{{ node.api_version }}</td>
+                </tr>
+                <tr>
+                    <th>Sketch Name</th>
+                    <td>{{ node.sketch_name }}</td>
+                </tr>
+                <tr>
+                    <th>Sketch Version</th>
+                    <td>{{ node.sketch_version }}</td>
+                </tr>
+                <tr>
+                    <th>Firmware</th>
+                    <td>
+                        <select name="firmware" >
+                                <option value=""> </option>
+                        {% for fw in firmwares %}
+                            {% if fw.id == node.firmware_id %}
+                                <option value="{{ fw.id }}" selected>{{ fw.type.name }} ({{ fw.version }})</option>
+                            {% else %}
+                                <option value="{{ fw.id }}">{{ fw.type.name }}({{ fw.version }})</option>
+                            {% endif %}
+                        {% endfor %}
+                        </select>
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+    </form>
  </div>
-{% endfor %}
 {% endblock %}

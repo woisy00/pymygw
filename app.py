@@ -7,7 +7,8 @@ import logging.handlers
 import config
 from pymygw.Gateway import Gateway
 from pymygw.Webinterface import app
-
+from pymygw.MQTT import MQTT
+import os
 
 '''
     Logging
@@ -19,26 +20,23 @@ if not log.handlers:
     handler = logging.handlers.RotatingFileHandler(config.LogFile, maxBytes=4000000, backupCount=5)
     handler.setFormatter(formatter)
     log.addHandler(handler)
+    
+    ch = logging.StreamHandler(sys.stdout)
+    ch.setFormatter(formatter)
+    log.addHandler(ch)
 if config.DEBUG:
     log.setLevel(logging.DEBUG)
 else:
     log.setLevel(logging.INFO)
 
 
+if not os.path.exists(config.FirmwareDir):
+    os.makedirs(config.FirmwareDir)
+    
 '''
     Publisher
 '''
-if config.Publisher == 'MQTT':
-    from pymygw.MQTT import MQTT
-    publisher = MQTT()
-elif config.Publisher == 'Openhab':
-    from pymygw.OpenHab import Openhab
-    #from pymygw import Webinterface
-    publisher = Openhab()
-else:
-    log.error('Unknown Publisher {0}'.format(config.Publisher))
-    sys.exit(1)
-
+publisher = MQTT()
 
 def exithandler(signal, frame):
     print 'Ctrl-C.... Exiting'
@@ -54,5 +52,4 @@ if __name__ == "__main__":
     serialGW.daemon = True
     serialGW.start()
     app.run(host='0.0.0.0', port=config.WebPort)
-
 
