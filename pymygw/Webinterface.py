@@ -1,12 +1,17 @@
 from flask import Flask, render_template, g, request, redirect, url_for
 from datetime import datetime
 from logging import getLogger
+import logging
 
 import config
 import Database
 import os
+import subprocess
 
 from operator import attrgetter
+
+from MySensor import RebootMessage
+from Gateway import Gateway
 
 app = Flask(__name__, template_folder='web/templates', static_folder='web/static')
 log = getLogger('pymygw')
@@ -28,15 +33,6 @@ def index():
 
 @app.route('/nodes', methods=['GET', 'POST'])
 def nodes():
-    if request.method == 'POST':
-        typeName=request.form['name']
-        fwt = g.db.getFirmwareType(typeName)
-        if fwt is None:
-            fwt = g.db.addFirmwareType(typeName)
-        
-        g.db.addFirmware(fwt, request.form['version'], data)
-
-
     return render_template('nodes.html',
                            nodes=g.db.loadNodes(),
                            firmwares=g.db.loadFirmwares())
@@ -65,6 +61,9 @@ def node(nodeId):
         
         if anythingChanged:
             g.db.commit()
+        
+        if node.requestReboot:
+            Gateway.instance.writeMessage(RebootMessage(nodeId))
 
     return render_template('nodedetail.html',
                            node=node,
@@ -79,7 +78,9 @@ def delete_node(nodeId):
 def reboot_node(nodeId):
     node = g.db.getNode(nodeId)
     node.requestReboot = True
-    g.db.commit()
+    node.status = 'Reboot requested';
+    g.db.commit()    
+    Gateway.instance.writeMessage(RebootMessage(nodeId))
     return redirect(url_for('nodes'))
     
 @app.route('/firmware', methods=['GET', 'POST'])
@@ -103,3 +104,30 @@ def firmware():
 
     return render_template('firmware.html',
                             data=sorted(firmwares, key=attrgetter('type_id', 'version')))
+
+@app.route('/gateway', methods=['GET', 'POST'])                            
+def gateway():
+    if request.method == 'POST':
+        if request.form['name'] == 'firmware':
+            log.info("Flashing gateway firmware")
+            f = request.files['firmware']
+            dest = os.path.join(config.FirmwareDir, 'gateway.hex')
+            f.save(dest)
+        
+            Gateway.instance.stop()
+            cmd=["/usr/bin/avrdude", "-C/etc/avrdude.conf", "-v", 
+                    "-patmega328p", "-carduino", "-P{0}".format(config.SerialPort),
+                    "-b115200", "-D", "-Uflash:w:{0}:i".format(dest)]
+            log.info(' '.join(cmd))
+            subprocess.call(cmd)
+            Gateway.instance.start()        
+        elif request.form['name'] == 'debug':
+            if log.getEffectiveLevel() == logging.DEBUG:
+                log.setLevel(logging.INFO)
+            else:
+                log.setLevel(logging.DEBUG)
+            
+            log.info("Setting log level to {0}".format(log.getEffectiveLevel()))
+    
+    debugActive = log.getEffectiveLevel() == logging.DEBUG
+    return render_template('gateway.html', debugActive=debugActive)

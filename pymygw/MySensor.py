@@ -3,7 +3,162 @@ from logging import getLogger
 
 import config
 import Database
+from MQTT import MQTT
 
+log = getLogger('pymygw')
+def fromSerial(message):
+    splitted = message.split(';', 6)
+    if len(splitted) == 6:
+        if splitted[2] == '3' and splitted[4] == '9':
+            log.info('Skipping debug message: {0}'.format(message))
+            return None
+            
+        n, c, m, a, s, p = splitted
+        numericType = int(float(m))
+        numericSubType = int(float(s))
+        type = None
+        subType = None
+        
+        for nyme, typeDef in config.MySensorMessageType.iteritems():
+            if numericType == typeDef['id']:
+                type = typeDef
+                break
+        
+        if type is None:
+            log.debug('Skipping {0}: unknown messagetype'.format(message))
+            return None
+        
+        for nyme, typeDef in type['subTypes'].iteritems():
+            if numericSubType == typeDef['id']:
+                subType = typeDef
+                break
+        if subType is None:
+            log.debug('Skipping {0}: unknown subtype'.format(message))
+            return None
+            
+        return Message(n, c, type, subType, p, a==1)
+    else:
+        return None
+        
+def fromMQTT(topic, payload):
+    # /prefix/in/nodeId/sensor/typeId/subTypeId
+    # '/{0}/in/{1}/{2}/{3}/{4}'
+    splitted = topic[1:].split('/', 6)
+    if len(splitted) == 6:
+            
+        prefix, direction, nodeId, sensor, type, subType = splitted
+        
+        if prefix != config.MQTTTopicPrefix:
+            return None
+        if direction != 'in':
+            return None
+            
+        numericType = int(float(type))
+        numericSubType = int(float(subType))
+        type = None
+        subType = None
+        
+        for nyme, typeDef in config.MySensorMessageType.iteritems():
+            if numericType == typeDef['id']:
+                type = typeDef
+                break
+        
+        if type is None:
+            log.debug('Skipping {0}: unknown messagetype'.format(message))
+            return None
+        
+        for nyme, typeDef in type['subTypes'].iteritems():
+            if numericSubType == typeDef['id']:
+                subType = typeDef
+                break
+        if subType is None:
+            log.debug('Skipping {0}: unknown subtype'.format(message))
+            return None
+            
+        return Message(nodeId, sensor, type, subType, payload, True)
+    else:
+        return None
+
+class Message:
+    
+    
+    def __init__(self, nodeId, sensor, messageType, subType, payload, ack=False):        
+        self.__nodeId = nodeId
+        self.__sensor = sensor
+        self.__messageType = messageType
+        self.__subType = subType
+        self.__ack = ack
+        self.__payload = payload
+
+    def getNodeId(self):
+        return self.__nodeId
+        
+    def getSensor(self):
+        return self.__sensor
+        
+    def getType(self):
+        return self.__messageType
+
+    def getTypeId(self):
+        return self.__messageType['id']
+    
+    def getSubType(self):
+        return self.__subType
+
+    def getSubTypeId(self):
+        return self.__subType['id']
+            
+    def getPayload(self):
+        return self.__payload
+    
+    def isInternal(self):
+        return self.__sensor == 255 or self.__messageType == config.MySensorMessageType['INTERNAL']
+        
+    def isSet(self):
+        return self.__messageType == config.MySensorMessageType['SET']
+
+    def isReq(self):
+        return self.__messageType == config.MySensorMessageType['REQ']
+
+    def isPresentation(self):
+        return self.__messageType == config.MySensorMessageType['PRESENTATION']
+
+    def isStream(self):
+        return self.__messageType == config.MySensorMessageType['STREAM']
+        
+    def toSerial(self):
+        return '{0};{1};{2};{4};{3};{5}\n'.format(self.__nodeId, self.__sensor, 
+                        self.__messageType['id'], self.__subType['id'], 1 if self.__ack else 0, self.__payload)
+                        
+    def toMQTT(self, prefix):
+        return '/{0}/out/{1}/{2}/{3}/{4}'.format(prefix, self.__nodeId, self.__sensor, self.__messageType['id'], self.__subType['id'])
+    
+    def __str__(self):
+        return  'nodeid: {0}, childid: {1}, messagetype: {2}, subtype: {3}, ack: {4}, payload: [{5}]'.format(
+            self.__nodeId, self.__sensor, self.__messageType['name'], self.__subType['name'], self.__ack, self.__payload)
+    
+    def __repr__(self):
+        return self.__str__()
+        
+class FirmwareConfigResponse(Message):
+    
+    def __init__(self, nodeId, payload):
+        Message.__init__(self, nodeId, 255, config.MySensorMessageType['STREAM'], 
+                config.MySensorStream['ST_FIRMWARE_CONFIG_RESPONSE'], payload)
+
+class FirmwareResponse(Message):
+    
+    def __init__(self, nodeId, payload):
+        Message.__init__(self, nodeId, 255, config.MySensorMessageType['STREAM'], 
+                config.MySensorStream['ST_FIRMWARE_RESPONSE'], payload)
+                
+
+class RebootMessage(Message):
+    
+    def __init__(self, nodeId):
+        Message.__init__(self, nodeId, 255, config.MySensorMessageType['INTERNAL'], 
+                config.MySensorInternal['I_REBOOT'], 'Reboot')
+                
 class MySensor():
     def __init__(self):
         self._log = getLogger('pymygw')
@@ -50,33 +205,23 @@ class MySensor():
         return self._answer
 
     def message(self, m):
-        self._cmd = None
+        self._response = None
         self._message = m
         self._db = Database.Database2()
-        self._log.debug('Parsed Message:\n\
-                         \tNodeID: {0},\n\
-                         \tChildID: {1},\n\
-                         \tMessageType: {2},\n\
-                         \tSubType: {3},\n\
-                         \tPayload: {4}'.format(self._message['nodeid'],
-                                                self._message['childid'],
-                                                self._message['messagetype'],
-                                                self.name(self._message['subtype']),
-                                                self._message['payload']))
+        self._log.debug('Parsed Message:\n {0}'.format(m))
         
         self.process()
-        if self._cmd is not None:
-            self._log.debug('Created CMD: {0}'.format(self._cmd))
-        return self._cmd
+        if self._response is not None:
+            self._log.debug('Created Response: {0}'.format(self._response))
+        return self._response
     
     def triggerReboot(self):
-        if self._db.isRebootRequested(self._message['nodeid']):
-            self._log.info('Reboot for Node [{0}] requested!'.format(self._message['nodeid']))
-            self._cmd = {'nodeid': self._message['nodeid'],
-                        'childid': 255,
-                        'messagetype': config.MySensorMessageType['INTERNAL']['id'],
-                        'subtype': config.MySensorInternal['I_REBOOT']['id'],
-                        'payload': ''}
+        if self._db.isRebootRequested(self._message.getNodeId()):
+            self._log.info('Reboot for Node [{0}] requested!'.format(self._message.getNodeId()))
+            self._response = Message(self._message.getNodeId(), 255,
+                        config.MySensorMessageType['INTERNAL'],
+                        config.MySensorInternal['I_REBOOT'],
+                        "")
             return True
         else:
             return False
@@ -92,7 +237,7 @@ class MySensorMessageType(MySensor):
 
     def process(self):
         '''TODO'''
-        return self._cmd
+        return None
 
 
 class MySensorPresentation(MySensor):
@@ -104,17 +249,12 @@ class MySensorPresentation(MySensor):
         MySensor.__init__(self)
 
     def process(self):
-        if self.triggerReboot():
+        if self._message.getSubTypeId() == self.id('S_ARDUINO_NODE')\
+            or self._message.getSubTypeId() == self.id('S_ARDUINO_REPEATER_NODE'):
+            # ignore Node presentation!
             return
 
-        self._message['sensortype'] = self.name(self._message['subtype'])
-        self._message['comment'] = self.comment(self.name(self._message['subtype']))
-        self._message['description'] = self._message['payload']
-        # When it is a presentation message, 
-        # we don't need to update the latest value
-        # del (self._message['payload'])
         self._log.debug('Message in presentation: {0}'.format(self._message))
-        
         self._db.process(self._message)
 
 
@@ -122,80 +262,77 @@ class MySensorSetReq(MySensor):
     '''
         MySensor Set and Request Mapping Object
     '''
-    def __init__(self, publisher):
+    def __init__(self):
         self._dict = config.MySensorSetReq
         MySensor.__init__(self)
-        self._publisher = publisher
 
     def process(self):
         if self.triggerReboot():
             return
             
-        if self._message['messagetype'] == 'SET':
+        if self._message.isSet():
             self.__set()
 
     def __set(self):
-        self._message['sensortype'] = self.name(self._message['subtype'])
         self._log.debug('Message in set: {0}'.format(self._message))
         self._db.process(self._message)
-        db_info = self._db.getSensor(self._message['nodeid'], self._message['childid'])
-        self._publisher.publishSensorValue(self._message, db_info)
+        MQTT.instance.publish(self._message)
 
 
 class MySensorInternal(MySensor):
     '''
         MySensor Internal Mapping Object
     '''
-    def __init__(self, publisher):
+    def __init__(self):
         self._dict = config.MySensorInternal
         MySensor.__init__(self)
-        self._publisher = publisher
 
     def process(self):
         self._log.debug('Processing Internal Message')
-        self._messagetype = config.MySensorMessageType['INTERNAL']['id']
-        self._message['sensortype'] = self.name(self._message['subtype'])
-
-        if self._message['subtype'] == self.id('I_BATTERY_LEVEL'):
-            if self.triggerReboot():
-                return
+        
+        if self._message.getSubTypeId() == self.id('I_BATTERY_LEVEL'):
             self._log.debug('Message in set: {0}'.format(self._message))
             self._db.process(self._message)
-            db_info = self._db.getNode(self._message['nodeid'])
-            self._publisher.publishInternalValue(self._message, db_info)
-        elif self._message['subtype'] == self.id('I_TIME'):
+            MQTT.instance.publish(self._message)
+        elif self._message.getSubTypeId() == self.id('I_HEARTBEAT'):
+            if self.triggerReboot():
+                return
+        elif self._message.getSubTypeId() == self.id('I_HEARTBEAT_RESPONSE'):
+            if self.triggerReboot():
+                return
+        elif self._message.getSubTypeId() == self.id('I_TIME'):
             if self.triggerReboot():
                 return
             self._log.debug('Processed by I_TIME: {0}'.format(self._message))
             self.__GetTime()
-        elif self._message['subtype'] == self.id('I_VERSION'):
+        elif self._message.getSubTypeId() == self.id('I_VERSION'):
             self._db.process(self._message)
-        elif self._message['subtype'] == self.id('I_ID_REQUEST'):
+        elif self._message.getSubTypeId() == self.id('I_ID_REQUEST'):
             self._log.debug('Processed by I_ID_REQUEST: {0}'.format(self._message))
             self.__IDRequest()
-        elif self._message['subtype'] == self.id('I_ID_RESPONSE'):
+        elif self._message.getSubTypeId() == self.id('I_ID_RESPONSE'):
             pass
-        elif self._message['subtype'] == self.id('I_INCLUSION_MODE'):
+        elif self._message.getSubTypeId() == self.id('I_INCLUSION_MODE'):
             pass
-        elif self._message['subtype'] == self.id('I_CONFIG'):
+        elif self._message.getSubTypeId() == self.id('I_CONFIG'):
             self._log.debug('Processed by I_CONFIG: {0}'.format(self._message))
             self.__Config()
-        elif self._message['subtype'] == self.id('I_FIND_PARENT'):
+        elif self._message.getSubTypeId() == self.id('I_FIND_PARENT'):
             pass
-        elif self._message['subtype'] == self.id('I_FIND_PARENT_RESPONSE'):
+        elif self._message.getSubTypeId() == self.id('I_FIND_PARENT_RESPONSE'):
             pass
-        elif self._message['subtype'] == self.id('I_LOG_MESSAGE'):
+        elif self._message.getSubTypeId() == self.id('I_LOG_MESSAGE'):
             pass
-        elif self._message['subtype'] == self.id('I_CHILDREN'):
+        elif self._message.getSubTypeId() == self.id('I_CHILDREN'):
             pass
-        elif self._message['subtype'] == self.id('I_SKETCH_NAME'):
+        elif self._message.getSubTypeId() == self.id('I_SKETCH_NAME'):
             self._log.debug('Processed by I_SKETCH_NAME: {0}'.format(self._message))
             self._db.process(self._message)
-        elif self._message['subtype'] == self.id('I_SKETCH_VERSION'):
+        elif self._message.getSubTypeId() == self.id('I_SKETCH_VERSION'):
             self._db.process(self._message)
-        elif self._message['subtype'] == self.id('I_REBOOT'):
+        elif self._message.getSubTypeId() == self.id('I_REBOOT'):
             pass
-        elif self._message['subtype'] == self.id('I_GATEWAY_READY'):
+        elif self._message.getSubTypeId() == self.id('I_GATEWAY_READY'):
             pass
 
     def __IDRequest(self):
@@ -206,29 +343,28 @@ class MySensorInternal(MySensor):
         newID = self._db.newNodeID()
         self._log.debug("new id {0}".format(newID))
         if newID:
-            self._cmd = {'nodeid': 255,
-                         'childid': 255,
-                         'messagetype': self._messagetype,
-                         'subtype': self.id('I_ID_RESPONSE'),
-                         'payload': newID}
-
+            self._response = Message(255, 255,
+                     config.MySensorMessageType['INTERNAL'],
+                     config.MySensorInternal['I_ID_RESPONSE'], 
+                     newID)
+            
     def __Config(self):
         '''
             return config
             only used for get_metric afaik
         '''
-        self._cmd = {'nodeid': self._message['nodeid'],
-                     'childid': 255,
-                     'messagetype': self._messagetype,
-                     'subtype': self.id('I_CONFIG'),
-                     'payload': config.UnitSystem}
-
+        self._response = Message(self._message.getNodeId(),
+                     255,
+                     config.MySensorMessageType['INTERNAL'],
+                     config.MySensorInternal['I_CONFIG'], 
+                     config.UnitSystem)
+                     
     def __GetTime(self):
-        self._cmd = {'nodeid': self._message['nodeid'],
-                     'childid': self._message['childid'],
-                     'messagetype': self._messagetype,
-                     'subtype': self.id('I_TIME'),
-                     'payload': int(time())}
+        self._response = Message(self._message.getNodeId(),
+                     self._message.getSensor(),
+                     config.MySensorMessageType['INTERNAL'],
+                     config.MySensorInternal['I_TIME'], 
+                     int(time()))
 
     def __Sketch_Name(self):
         pass
@@ -237,32 +373,29 @@ class MySensorStream(MySensor):
     '''
         MySensor Stream Mapping Object
     '''
-    def __init__(self, publisher):
+    def __init__(self):
         self._dict = config.MySensorStream
         MySensor.__init__(self)
-        self._publisher = publisher
 
     def process(self):
         self._log.debug('Processing Stream Message')
-        self._messagetype = config.MySensorMessageType['STREAM']['id']
-        self._message['sensortype'] = self.name(self._message['subtype'])
 
-        if self._message['subtype'] == self.id('ST_FIRMWARE_CONFIG_REQUEST'):
+        if self._message.getSubTypeId() == self.id('ST_FIRMWARE_CONFIG_REQUEST'):
             self.__FirmwareConfigReq()
-        elif self._message['subtype'] == self.id('ST_FIRMWARE_CONFIG_RESPONSE'):
+        elif self._message.getSubTypeId() == self.id('ST_FIRMWARE_CONFIG_RESPONSE'):
             pass
-        elif self._message['subtype'] == self.id('ST_FIRMWARE_REQUEST'):
+        elif self._message.getSubTypeId() == self.id('ST_FIRMWARE_REQUEST'):
             self.__FirmwareReq()
-        elif self._message['subtype'] == self.id('ST_FIRMWARE_RESPONSE'):
+        elif self._message.getSubTypeId() == self.id('ST_FIRMWARE_RESPONSE'):
             pass
-        elif self._message['subtype'] == self.id('ST_SOUND'):
+        elif self._message.getSubTypeId() == self.id('ST_SOUND'):
             pass
-        elif self._message['subtype'] == self.id('ST_IMAGE'):
+        elif self._message.getSubTypeId() == self.id('ST_IMAGE'):
             pass
         
 
     def __pullWord(self, pos):
-        return int(self._message['payload'][pos:pos+2], 16) + 256 * int(self._message['payload'][pos+2:pos+4], 16)
+        return int(self._message.getPayload()[pos:pos+2], 16) + 256 * int(self._message.getPayload()[pos+2:pos+4], 16)
     
     def __pushWord(self, arr, val):
         arr.append(val & 0x00FF)
@@ -288,7 +421,7 @@ class MySensorStream(MySensor):
         fwcrc = self.__pullWord(12)
         
         
-        nodeId = self._message['nodeid']
+        nodeId = self._message.getNodeId()
         node = self._db.getNode(nodeId)
         
         if node is None:
@@ -309,14 +442,14 @@ class MySensorStream(MySensor):
         if int(fw.version) != fwversion or fw.type_id != fwtype:            
             self._log.info("Node [{0}] needs an update to firmware {1}, Version {2}".format(
                             nodeId, fw.type.name, fw.version))
+            node.status = 'Firmware upgrade needed';
+            self._db.commit();
         elif int(fw.crc) != fwcrc:
-            self._log.info("Node [{0]}] needs an update due to a different checksum!".format(nodeId))
+            self._log.info("Node [{0}] needs an update due to a different checksum!".format(nodeId))
+            node.status = 'Firmware upgrade needed';
+            self._db.commit();
             
-        self._cmd = {'nodeid': self._message['nodeid'],
-                     'childid': 255,
-                     'messagetype': self._messagetype,
-                     'subtype': self.id('ST_FIRMWARE_CONFIG_RESPONSE'),
-                     'payload': self.encode(payload)}
+        self._response = FirmwareConfigResponse(self._message.getNodeId(), self.encode(payload))
 
     def __FirmwareReq(self):
         fwtype = self.__pullWord(0)
@@ -324,10 +457,15 @@ class MySensorStream(MySensor):
         fwblock = self.__pullWord(8)
         
         self._log.debug('Requesting firmware {0}, Version {1} for node {2}'.format(
-                        fwtype, fwversion, self._message['nodeid']))
-                        
+                        fwtype, fwversion, self._message.getNodeId()))
+
+        nodeId = self._message.getNodeId()
+        node = self._db.getNode(nodeId)
+                
         fw = self._db.getFirmware(fwtype, fwversion)
         if fw is not None:
+            node.status = 'Sending firmware block {0}/{1}'.format((fw.blocks - fwblock), fw.blocks);
+            self._db.commit();
             payload = []
             self.__pushWord(payload, fw.type_id)
             self.__pushWord(payload, int(fw.version))
@@ -336,92 +474,5 @@ class MySensorStream(MySensor):
                 block = fwblock * 16 + i
                 payload.append(fw.getBlock(block))
 
-            self._cmd = {'nodeid': self._message['nodeid'],
-                        'childid': 255,
-                        'messagetype': self._messagetype,
-                        'subtype': self.id('ST_FIRMWARE_RESPONSE'),
-                        'payload': self.encode(payload)}
+            self._response = FirmwareResponse(self._message.getNodeId(), self.encode(payload))
                         
-#function sendFirmwareResponse(destination, fwtype, fwversion, fwblock, db, gw) {
-#							var fwtype = pullWord(payload, 0);
-#							var fwversion = pullWord(payload, 2);
-#							var fwblock = pullWord(payload, 4);
-#	db.collection('firmware', function(err, c) {
-#		c.findOne({
-#			'type': fwtype,
-#			'version': fwversion
-#		}, function(err, result) {
-#			if (err)
-#				console.log('Error finding firmware version ' + fwversion + ' for type ' + fwtype);
-#			var payload = [];
-#			pushWord(payload, result.type);
-#			pushWord(payload, result.version);
-#			pushWord(payload, fwblock);
-#			for (var i = 0; i < FIRMWARE_BLOCK_SIZE; i++)
-#				payload.push(result.data[fwblock * FIRMWARE_BLOCK_SIZE + i]);
-#			var sensor = NODE_SENSOR_ID;
-#			var command = C_STREAM;
-#			var acknowledge = 0; // no ack
-#			var type = ST_FIRMWARE_RESPONSE;
-#			var td = encode(destination, sensor, command, acknowledge, type, payload);
-#			console.log('-> ' + td.toString());
-#			gw.write(td);
-#		});
-#	});
-
-        
-#const FIRMWARE_BLOCK_SIZE	= 16;
-#function pullWord(arr, pos) {
-#	return arr[pos] + 256 * arr[pos + 1];
-#}
-#function pushDWord(arr, val) {
-#	arr.push(val & 0x000000FF);
-#	arr.push((val  >> 8) & 0x000000FF);
-#	arr.push((val  >> 16) & 0x000000FF);
-#	arr.push((val  >> 24) & 0x000000FF);
-#}
-#
-#IN:
-#
-#		case C_STREAM:
-#			switch (type) {
-#					case ST_FIRMWARE_CONFIG_REQUEST:
-#							var fwtype = pullWord(payload, 0);
-#							var fwversion = pullWord(payload, 2);
-#							sendFirmwareConfigResponse(sender, fwtype, fwversion, db, gw);
-#							break;
-#					case ST_FIRMWARE_CONFIG_RESPONSE:
-#							break;
-#					case ST_FIRMWARE_REQUEST:
-#							sendFirmwareResponse(sender, fwtype, fwversion, fwblock, db, gw);
-#							break;
-#                         
-#                            
-#OUT:
-#
-
-#
-#function sendFirmwareResponse(destination, fwtype, fwversion, fwblock, db, gw) {
-#	db.collection('firmware', function(err, c) {
-#		c.findOne({
-#			'type': fwtype,
-#			'version': fwversion
-#		}, function(err, result) {
-#			if (err)
-#				console.log('Error finding firmware version ' + fwversion + ' for type ' + fwtype);
-#			var payload = [];
-#			pushWord(payload, result.type);
-#			pushWord(payload, result.version);
-#			pushWord(payload, fwblock);
-#			for (var i = 0; i < FIRMWARE_BLOCK_SIZE; i++)
-#				payload.push(result.data[fwblock * FIRMWARE_BLOCK_SIZE + i]);
-#			var sensor = NODE_SENSOR_ID;
-#			var command = C_STREAM;
-#			var acknowledge = 0; // no ack
-#			var type = ST_FIRMWARE_RESPONSE;
-#			var td = encode(destination, sensor, command, acknowledge, type, payload);
-#			console.log('-> ' + td.toString());
-#			gw.write(td);
-#		});
-#	});
-#}

@@ -1,12 +1,13 @@
 {% extends "base.html" %}
 {% block content %}
-<h2>Nodes, <a href="/">Sensors</a>, <a href="/firmware">Firmware</a></h2>
+<h2>Nodes, <a href="/">Sensors</a>, <a href="/firmware">Firmware</a>, <a href="/gateway">Gateway</a></h2>
 <div class="table-responsive col-md-12">
     <table class="table table-hover table-condensed">
         <thead>
             <tr>
                 <th>Node ID</th>
                 <th>Node Name</th>
+                <th>Status</th>
                 <th>Battery Level</th>
                 <th>Sketch</th>
                 <th>Firmware</th>
@@ -18,7 +19,8 @@
             <tr>
                 <td>{{ n.node_id }}</td>
                 <td>{{ n.name }}</td>
-                <td>{{ n.battery }}</td>
+                <td>{{ n.status }}</td>
+                <td>{{ n.battery }}</td>                
                 <td>{{ n.sketch_name }} ({{ n.sketch_version }})</td>
                 {% if n.firmware is not none %}
                 <td>{{ n.firmware.type.name }} ({{n.firmware.version}})</td>

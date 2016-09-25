@@ -17,6 +17,7 @@ class Node(Base):
     id = Column(Integer, primary_key=True)
     node_id = Column(Integer, nullable=False)
     name = Column(String(60), default=None)
+    status = Column(String(20), default=None)
     sketch_name = Column(String(60), default=None)
     sketch_version = Column(String(60), default=None)
     api_version = Column(String(20), default=None)
@@ -31,6 +32,7 @@ class Node(Base):
                            'Name': self.name,
                            'Sketch Name': self.sketch_name,
                            'Sketch Version': self.sketch_version,
+                           'Status': self.status,
                            'API Version': self.api_version,
                            'Battery': self.battery,
                            'Battery Level': self.battery_level})
@@ -161,18 +163,19 @@ class NodeProcessor:
         '''
             updates the db entry if needed
         '''
-        type = msg['sensortype']
-        value = msg['payload']
+        type = msg.getSubType()
         
-        if type == 'I_BATTERY_LEVEL':
-            self._node.battery = value
-        elif type == 'I_SKETCH_NAME':
-            self._node.sketch_name = value
-            self._node.requestReboot = False
-        elif type == 'I_SKETCH_VERSION':
-            self._node.sketch_version = value
-        elif type == 'I_VERSION':
-            self._node.api_version = value
+        if type == config.MySensorInternal['I_BATTERY_LEVEL']:
+            self._node.battery = msg.getPayload()
+        elif type == config.MySensorInternal['I_SKETCH_NAME']:
+            self._node.sketch_name = msg.getPayload()
+        elif type == config.MySensorInternal['I_SKETCH_VERSION']:
+            self._node.sketch_version = msg.getPayload()
+        elif type == config.MySensorInternal['I_VERSION']:
+            self._node.api_version = msg.getPayload()
+            
+        self._node.status = 'Active'
+        self._node.requestReboot = False
 
 
 class SensorProcessor:
@@ -184,14 +187,15 @@ class SensorProcessor:
         '''
             updates the db entry if needed
         '''
-        self._args = msg
         self._sensor.last_seen = time.time()
+        
+        if msg.isPresentation():
+            self._sensor.sensor_type = msg.getSubType()['name'][2:]
+        else:
+            self._sensor.last_value = msg.getPayload()
+        '''
+            ToDO: validate SET/REQ-Types with PRESENTATION-Types
         if 'sensortype' in self._args:
-            '''
-                strip of first two characters
-                could be S_ V_
-                depends on presentation or set/req
-            '''
             self._args['sensortype'] = self._args['sensortype'].split('_')[1]
             if not self._sensor.sensor_type:
                 self._sensor.sensor_type = self._args['sensortype']
@@ -201,19 +205,8 @@ class SensorProcessor:
                                  Reported Type: {1}'.format(self._sensor.sensor_type,
                                                             self._args['sensortype']))
                 #return False
-
-        if 'comment' in self._args and \
-                self._args['comment'] != self._sensor.comment:
-            self._sensor.comment = self._args['comment']
-
-        if 'description' in self._args and \
-                self._args['description'] != self._sensor.description:
-            self._sensor.description = self._args['description']
-
-
-        if 'payload' in self._args and \
-                self._args['payload'] != self._sensor.last_value:
-            self._sensor.last_value = self._args['payload']
+        '''
+            
 
        
 
@@ -269,15 +262,15 @@ class Database2():
             self._log.debug('unknown error when quering for node {}: {}'.format(nodeId, e))
 
     def process(self, msg):
-        nodeid = msg['nodeid']
+        nodeid = msg.getNodeId()
         processor = None
-        if int(msg['childid']) == 255:
+        if msg.isInternal():
             # node, no sensor
             db_item = self.getNode(nodeid)
             processor = NodeProcessor(db_item)
         else:
             # node and sensor
-            db_item = self.getSensor(nodeid, msg['childid'])
+            db_item = self.getSensor(nodeid, msg.getSensor())
             processor = SensorProcessor(db_item)
         processor.process(msg);
         self.commit()

@@ -33,23 +33,17 @@ else:
 if not os.path.exists(config.FirmwareDir):
     os.makedirs(config.FirmwareDir)
     
-'''
-    Publisher
-'''
-publisher = MQTT()
-
 def exithandler(signal, frame):
     print 'Ctrl-C.... Exiting'
-    serialGW.stop()
-    publisher.disconnect()
-    serialGW.join()
+    MQTT.instance.disconnect()
+    Gateway.instance.stop()
     sys.exit(0)
 
 if __name__ == "__main__":
     for sig in (signal.SIGINT, signal.SIGTERM):
         signal.signal(sig, exithandler)
-    serialGW = Gateway(publisher)
-    serialGW.daemon = True
-    serialGW.start()
+    MQTT.instance = MQTT()
+    Gateway.instance = Gateway()
+    Gateway.instance.start()
     app.run(host='0.0.0.0', port=config.WebPort)
 

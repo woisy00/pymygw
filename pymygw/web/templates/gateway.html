@@ -1,0 +1,37 @@
+{% extends "base.html" %}
+{% block content %}
+<h2><a href="/nodes">Nodes</a>, <a href="/">Sensors</a>, <a href="/firmware">Firmware</a>, Gateway</h2>
+<table class="table table-hover">
+  <tr>
+    <td>
+      <div class="table-responsive col-md-12">
+        <form enctype="multipart/form-data" method="post">
+            {% if debugActive %}
+                <input type="hidden" name="name" value="debug" />
+                <input type="submit" value="Debug ausschalten" />
+            {% else %}
+                <input type="hidden" name="name" value="debug" />
+                <input type="submit" value="Debug einschalten" />
+            {% endif %}
+        </form>
+      </div>
+    </td>
+  </tr>
+  <tr>
+    <td>
+      <div class="table-responsive col-md-12">
+        <form enctype="multipart/form-data" method="post">
+          <table class="table-hover table-condensed">
+            <tr>
+              <td>Gateway-Firmware:</td>
+              <input type="hidden" name="name" value="firmware" />
+              <td><input type="file" name="firmware" /></td>
+              <td><input type="submit" value="Gateway programmieren" /></td>
+            </tr>
+          </table>
+        </form>
+      </div>
+    </td>
+  </tr>
+</table>
+{% endblock %}

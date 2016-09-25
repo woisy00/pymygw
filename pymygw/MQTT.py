@@ -4,9 +4,12 @@ from time import sleep
 
 import config
 import tools
-
+import MySensor
+import Gateway
 
 class MQTT(object):
+    instance = None
+
     def __init__(self):
         self._log = getLogger('pymygw')
         self.connected = False
@@ -47,6 +50,7 @@ class MQTT(object):
         self._PublishClient.on_disconnect = self.__on_disconnect
         self._PublishClient.on_publish = self.__on_publish
         self._PublishClient.on_log = self.__on_log
+        self._PublishClient.on_message = self.__on_message
 
         self._PublishClient.connect(config.MQTTBroker, port=p)
         self._PublishClient.loop_start()
@@ -56,7 +60,7 @@ class MQTT(object):
             sleep(1)
             raise SystemExit('MQTT connection failed. Check Log')
         self._log.info('MQTT Client connected to Broker {0}'.format(config.MQTTBroker))
-
+        
 
     '''
         MQTT Callbacks
@@ -67,17 +71,30 @@ class MQTT(object):
             self._log.error('MQTT connection failed: {0}'.format(self._rc[rc]))
             self.connected = False
         self.connected = True
-
+        self._PublishClient.subscribe('/{0}/in/#'.format(config.MQTTTopicPrefix))
+        
     def __on_disconnect(self, client, userdata, rc):
         if rc != 0:
             self._log.error('MQTT Unexpected disconnection')
         else:
             self._log.info('MQTT Client disconnected from Broker {0}'.format(config.MQTTBroker))
         self.connected = False
-
+        
     def __on_publish(self, client, userdata, mid):
         pass
-
+        
+    def __on_message(self, client, userdata, message):
+        self._log.debug('MQTT Message: Client: {0}, Userdata: {1}, Topic: {2}, Payload: {3}'.format(client, userdata, message.topic, message.payload)) 
+        msg = MySensor.fromMQTT(message.topic, message.payload)
+        if msg is None:
+            self._log.debug('Ignoring MQTT message from Topic: {0}'.format(message.topic))
+        else:
+            if msg.isSet() or msg.isInternal():
+                self._log.debug('Distributing Message: {0}'.format(msg))
+                Gateway.Gateway.instance.writeMessage(msg)
+            else:
+                self._log.debug('Nothing to to for Message: {0}'.format(msg))
+        
     def __on_log(self, client, userdata, level, msg):
         self._log.debug('MQTT Log: Level: {0}, Message: {1}'.format(level, msg))
 
@@ -86,57 +103,22 @@ class MQTT(object):
 
         self._log.debug('MQTT Returncode {0}, msgid {1}'.format(result, msgid))
         if result == 0:
-            self._log.info('MQTT Publish successfully: {0} value: {1}'.format(topic, payload))
+            self._log.debug('MQTT Publish successfully: {0} value: {1}'.format(topic, payload))
                                                                                     
         else:
             self._log.error('MQTT Publish failed: {0} value: {1}'.format(topic, payload))
 
-    def publishSensorValue(self, msg, sensor):
-        self._data = tools.checkKeys(msg, ('nodeid', 'childid', 'payload'))
-        if self._data and self.connected:
-            self._log.debug('Try to publish values to the MQTT Broker on {0}: {1}'.format(config.MQTTBroker,
-                                                                                           msg))
-            topic = "/" + config.MQTTTopic
+    def publish(self, msg):
+        if self.connected:
+            self._log.debug('Try to publish values to the MQTT Broker on {0}: {1}'.format(config.MQTTBroker, msg))
+            topic = msg.toMQTT(config.MQTTTopicPrefix)
 
             try:
-                topic = topic.replace(
-                    '%nodeid', self._data['nodeid']).replace(
-                    '%childid', self._data['childid']).replace(
-                    '%sensorid', self._data['childid']).replace(
-                    '%type', msg['sensortype'])
-					
-                if not (sensor.name is None):
-                    topic = topic.replace('%sensor_name', sensor.name)
-                
-                if not (sensor.node.name is None):
-                    topic = topic.replace('%node_name', sensor.node.name)
-
                 self._log.debug('Publishing to topic: {0}'.format(topic)) 
-                self.__publish(topic, self._data['payload'])
+                self.__publish(topic, msg.getPayload())
             except Exception, e:
              self._log.error('MQTT Publish failed: Failed to create topic')
              self._log.error(e, exc_info=True)
              
-    def publishInternalValue(self, msg, node):
-        self._data = tools.checkKeys(msg, ('nodeid', 'childid', 'payload'))
-        if self._data and self.connected:
-            self._log.debug('Try to publish values to the MQTT Broker on {0}: {1}'.format(config.MQTTBroker,
-                                                                                           msg))
-            topic = "/" + config.InternalTopic
-
-            try:
-                topic = topic.replace(
-                    '%nodeid', self._data['nodeid']).replace(
-                    '%type', msg['sensortype'])
-					
-                if not (node.name is None):
-                    topic = topic.replace('%node_name', node.name)
-
-                self._log.debug('Publishing to topic: {0}'.format(topic)) 
-                self.__publish(topic, self._data['payload'])
-            except Exception, e:
-             self._log.error('MQTT Publish failed: Failed to create topic')
-             self._log.error(e, exc_info=True)
-    
     def disconnect(self):
-        self._PublishClient.disconnect()
+        self._PublishClient.disconnect()        
