@@ -1,5 +1,4 @@
 from sqlalchemy import create_engine, Column, Integer, Float, String, Boolean, UniqueConstraint, ForeignKey
-from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker, scoped_session, relationship, reconstructor
 from sqlalchemy import orm
 from sqlalchemy.orm.exc import NoResultFound
@@ -8,153 +7,11 @@ import time
 import json
 from logging import getLogger
 
+import Entities
+from Entities import Schema, FirmwareType, Firmware, Node, Sensor
+
 import config
-Base = declarative_base()
 
-
-class Node(Base):
-    __tablename__ = 'node'
-    id = Column(Integer, primary_key=True)
-    node_id = Column(Integer, nullable=False)
-    name = Column(String(60), default=None)
-    status = Column(String(20), default=None)
-    sketch_name = Column(String(60), default=None)
-    sketch_version = Column(String(60), default=None)
-    api_version = Column(String(20), default=None)
-    battery = Column(Integer, default=0)
-    battery_level = Column(Float, default=0)
-    requestReboot = Column(Boolean, default=False)
-    firmware_id = Column(Integer, ForeignKey('firmware.id'))
-    firmware = relationship("Firmware")
-
-    def __repr__(self):
-        return json.dumps({'Node': self.node_id,
-                           'Name': self.name,
-                           'Sketch Name': self.sketch_name,
-                           'Sketch Version': self.sketch_version,
-                           'Status': self.status,
-                           'API Version': self.api_version,
-                           'Battery': self.battery,
-                           'Battery Level': self.battery_level})
-
-
-class Sensor(Base):
-    __tablename__ = 'sensor'
-    id = Column(Integer, primary_key=True)
-    name = Column(String(29), default=None)
-    node_id = Column(Integer, ForeignKey('node.node_id'), nullable=False)
-    sensor_id = Column(Integer, default=0)
-    sensor_type = Column(String(20), default=None)
-    comment = Column(String(255))
-    description = Column(String(255))
-    last_seen = Column(Integer, default=0)
-    last_value = Column(String(20), default=0)
-
-    node = relationship("Node")
-    __table_args__ = (UniqueConstraint('node_id', 'sensor_id'),)
-
-    def __repr__(self):
-        return json.dumps({'Node': self.node_id,
-                           'Name': self.name,
-                           'Sensor': self.sensor_id,
-                           'Type': self.sensor_type,
-                           'Comment': self.comment,
-                           'Description': self.description,
-                           'Last Seen': self.last_seen,
-                           'Last Value': self.last_value})
-
-
-class FirmwareType(Base):
-    __tablename__ = 'firmware_type'
-    id = Column(Integer, primary_key=True)
-    name = Column(String(20), default=None, unique=True)
-    
-    def __repr__(self):
-        return json.dumps({'Name': self.name})
-                           
-class Firmware(Base):
-    __tablename__ = 'firmware'
-    id = Column(Integer, primary_key=True)
-    type_id = Column(Integer, ForeignKey('firmware_type.id'), nullable=False)
-    type = relationship("FirmwareType")
-    version = Column(String(20), default=None)
-    data = Column(String(4000))
-
-    def __repr__(self):
-        return json.dumps({'Type': self.type_id,
-                           'Version': self.version,
-                           'Blocks': self.blocks,
-                           'CRC': self.crc,
-                           'data': self.data})
-    @orm.reconstructor
-    def init_on_load(self):
-        self.__parse()
-        
-    def getBlock(self, block):
-        return self.__fwdata[block]
-    
-    def parse(self, type, version, data):
-        self.type_id = type.id
-        self.version = version
-        self.data = data
-        self.__parse()
-        
-    def __parse(self):
-        fwdata = []
-        start = 0
-        end = 0
-        pos = 0
-        
-        for l in self.data.split("\n"):
-            line = l.strip()
-            if len(line) > 0:
-                while line[0:1] != ":":
-                    line = line[1:]
-                reclen = int(line[1:3], 16)
-                offset = int(line[3:7], 16)
-                rectype = int(line[7:9], 16)
-                data = line[9:9 + 2 * reclen]
-                chksum = int(line[9 + (2 * reclen):9 + (2 * reclen) + 2], 16)
-                if rectype == 0:
-                    if start == 0 and end == 0:
-                        if offset % 128 > 0:
-                            raise Error("error loading hex file - offset can't be devided by 128")
-                        start = offset
-                        end = offset
-
-                    if offset < end:
-                        raise Error("error loading hex file - offset lower than end")
-                    while offset > end:
-                        fwdata.append(255)
-                        pos = pos + 1
-                        end = end + 1
-                        
-                    for i in range(0, reclen):
-                        fwdata.append(int(data[i * 2:(i * 2) + 2], 16))
-                        pos = pos + 1
-                    end += reclen
-        pad = end % 128
-        for i in range(0, 128 - pad):
-            fwdata.append(255)
-            pos = pos + 1
-            end = end + 1
-        self.blocks = (end - start) / 16
-        crc = 0xFFFF
-        for i in range(0, self.blocks * 16):
-            crc = self.__crc(crc, fwdata[i])
-
-        self.crc = crc
-        self.__fwdata = fwdata
-        
-    def __crc(self, old, data):
-        crc = old ^ data
-        for bit in range(0, 8):
-            if (crc&0x0001) == 0x0001:
-                crc = ((crc >> 1) ^ 0xA001)
-            else:
-                crc = crc >> 1
-        return crc
-    
 class NodeProcessor:
     def __init__(self, node):
         self._node = node
@@ -208,16 +65,14 @@ class SensorProcessor:
         '''
             
 
-       
-
-class Database2():
+class Database():
     def __init__(self):
         self._log = getLogger('pymygw')
         self._engine = create_engine(config.Database,
+                                     #echo=True,
                                      connect_args={'check_same_thread': False},
                                      poolclass=StaticPool)
-        Base.metadata.create_all(self._engine)
-        Base.metadata.bind = self._engine
+        self._schema = Entities.getSchema(self._engine)
         self._dbsession = scoped_session(sessionmaker(bind=self._engine))
 
     def commit(self):

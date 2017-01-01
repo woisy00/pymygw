@@ -18,7 +18,7 @@ log = getLogger('pymygw')
 
 @app.before_request
 def before_request():
-    g.db = Database.Database2()
+    g.db = Database.Database()
 
 
 @app.template_filter('timestamp2date')

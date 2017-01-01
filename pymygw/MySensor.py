@@ -8,11 +8,7 @@ from MQTT import MQTT
 log = getLogger('pymygw')
 def fromSerial(message):
     splitted = message.split(';', 6)
-    if len(splitted) == 6:
-        if splitted[2] == '3' and splitted[4] == '9':
-            log.info('Skipping debug message: {0}'.format(message))
-            return None
-            
+    if len(splitted) == 6:           
         n, c, m, a, s, p = splitted
         numericType = int(float(m))
         numericSubType = int(float(s))
@@ -207,7 +203,7 @@ class MySensor():
     def message(self, m):
         self._response = None
         self._message = m
-        self._db = Database.Database2()
+        self._db = Database.Database()
         self._log.debug('Parsed Message:\n {0}'.format(m))
         
         self.process()
@@ -322,6 +318,7 @@ class MySensorInternal(MySensor):
         elif self._message.getSubTypeId() == self.id('I_FIND_PARENT_RESPONSE'):
             pass
         elif self._message.getSubTypeId() == self.id('I_LOG_MESSAGE'):
+            self._log.debug('Debug Message: {0}'.format(self._message))
             pass
         elif self._message.getSubTypeId() == self.id('I_CHILDREN'):
             pass
